@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Disaster Response Resource Optimizer | Standalone Command Center</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            disaster: {
+              950: '#070a10',
+              900: '#0b0f17',
+              800: '#131b2a',
+              700: '#1c273c',
+              600: '#2b3b59',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet GIS Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- INLINED CUSTOM CSS -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: #0b0f17;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .font-mono {
+      font-family: var(--font-mono);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    /* Radar & Pulse Animations */
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.4), inset 0 0 10px rgba(239, 68, 68, 0.2);
+      }
+      50% {
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.7), inset 0 0 15px rgba(239, 68, 68, 0.4);
+      }
+    }
+
+    .radar-pulse-critical {
+      animation: pulseGlow 2s infinite ease-in-out;
+      border: 1px solid #ef4444;
+    }
+
+    /* Leaflet Map overrides */
+    .leaflet-container {
+      background: #0d131f !important;
+      font-family: var(--font-sans);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border-radius: 12px !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+      padding: 4px !important;
+    }
+
+    .leaflet-popup-tip {
+      background: #ffffff !important;
+    }
+
+    .route-tooltip {
+      background-color: rgba(15, 23, 42, 0.92) !important;
+      border: 1px solid #38bdf8 !important;
+      color: #f8fafc !important;
+      font-size: 11px !important;
+      border-radius: 6px !important;
+      padding: 6px 10px !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Glassmorphism Card Style */
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Navigation active tab indicator */
+    .tab-btn.active {
+      background-color: #1e293b;
+      color: #38bdf8;
+      border-bottom: 2px solid #38bdf8;
+    }
+
+    /* Badges */
+    .badge-critical {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .badge-high {
+      background: rgba(249, 115, 22, 0.2);
+      color: #fb923c;
+      border: 1px solid rgba(249, 115, 22, 0.4);
+    }
+    .badge-medium {
+      background: rgba(234, 179, 8, 0.2);
+      color: #facc15;
+      border: 1px solid rgba(234, 179, 8, 0.4);
+    }
+    .badge-low {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    /* Toast Animation */
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-enter {
+      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .mobile-volunteer-frame {
+      max-width: 440px;
+      margin: 0 auto;
+      border: 4px solid #334155;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+  </style>
+</head>
+<body class="bg-[#0b0f17] text-slate-100 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
+
+  <!-- TOP APP HEADER -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md px-4 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      
+      <!-- Brand & Disaster Status -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-900/30 text-white text-lg">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-extrabold text-base tracking-tight text-white flex items-center">
+              AI Disaster Response <span class="text-indigo-400 ml-1.5 font-normal text-xs uppercase tracking-widest px-2 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/30">Optimizer</span>
+            </h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-500/40 animate-pulse">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span> Flood Level 3 Active
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 flex items-center">
+            <span class="text-slate-300 font-medium">Concept:</span>&nbsp;Right Resource → Right Person → Right Place → Right Time
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls & Network Status -->
+      <div class="flex items-center flex-wrap gap-2">
+        
+        <!-- Offline / Online Simulator -->
+        <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
+          <span id="networkStatusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span>
+          <span id="networkStatusText" class="text-xs font-semibold text-emerald-400">ONLINE (Cloud Active)</span>
+          <button id="networkToggleBtn" class="ml-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded font-medium border border-slate-600 transition">
+            <i class="fa-solid fa-wifi mr-1"></i> Simulate Offline
+          </button>
+        </div>
+
+        <!-- AI Weights Configuration Modal Trigger -->
+        <button id="openSettingsBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700/70 font-medium flex items-center transition">
+          <i class="fa-solid fa-sliders text-indigo-400 mr-1.5"></i> AI Weights
+        </button>
+
+        <!-- Flood Disaster 10-Step Demo Button (Section 15) -->
+        <button onclick="window.demoScenarioRunner.goToStep(1)" class="text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white px-3.5 py-1.5 rounded-lg font-bold shadow-lg shadow-orange-900/30 flex items-center transition">
+          <i class="fa-solid fa-play-circle text-sm mr-1.5"></i> 10-Step Demo Walkthrough
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN NAVIGATION TABS -->
+    <div class="max-w-7xl mx-auto mt-2 pt-2 border-t border-slate-800/80 flex items-center space-x-1 overflow-x-auto text-xs">
+      <button data-tab="dashboard" class="tab-btn active px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-chart-line text-sm"></i> <span>Command Center</span>
+      </button>
+      <button data-tab="citizen" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-bullhorn text-sm"></i> <span>Public Request Form</span>
+      </button>
+      <button data-tab="operator" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-headset text-sm"></i> <span>Operator & Voice/SMS AI</span>
+      </button>
+      <button data-tab="volunteer" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-hand-holding-hand text-sm"></i> <span>Village Volunteer (Offline Mode)</span>
+      </button>
+      <button data-tab="resources" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-boxes-stacked text-sm"></i> <span>Resource Depots</span>
+      </button>
+      <button data-tab="allocations" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-truck-fast text-sm"></i> <span>Dispatches & Routes</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- SECTION 15 DEMO SCENARIO INTERACTIVE STEP BANNER -->
+  <div id="demoScenarioBanner" class="hidden bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 border-b border-amber-500/40 px-4 py-3 sticky top-[95px] z-30 shadow-2xl backdrop-blur-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <span id="demoStepBadge" class="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-extrabold text-xs tracking-wider uppercase shadow"></span>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span id="demoStepNumber" class="text-xs font-mono font-bold text-amber-400">Step 1 of 10</span>
+            <h3 id="demoStepTitle" class="text-sm font-bold text-white"></h3>
+          </div>
+          <p id="demoStepDescription" class="text-xs text-slate-300 mt-0.5"></p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="demoPrevBtn" onclick="window.demoScenarioRunner.prevStep()" class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold border border-slate-700">
+          <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+        </button>
+        <button id="demoNextBtn" onclick="window.demoScenarioRunner.nextStep()" class="text-xs px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-lg shadow-amber-500/30">
+          Next Step <i class="fa-solid fa-chevron-right ml-1"></i>
+        </button>
+        <button onclick="window.demoScenarioRunner.resetDemo()" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-rose-900 text-slate-400 hover:text-rose-200 font-medium">
+          <i class="fa-solid fa-rotate-left"></i> Exit Demo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- URGENT REALLOCATION BANNER (Section 10 & 15) -->
+  <div id="reallocationBanner" class="hidden bg-rose-950/90 border-b-2 border-rose-500 px-4 py-2.5 sticky top-[95px] z-30 flex items-center justify-between text-xs text-rose-100 shadow-xl">
+    <div class="flex items-center space-x-2">
+      <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+      <i class="fa-solid fa-triangle-exclamation text-rose-400 text-sm"></i>
+      <span class="font-bold text-white uppercase tracking-wider">Dynamic Reallocation Alert:</span>
+      <span id="reallocationBannerText" class="font-medium"></span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button onclick="window.app.runOptimizationEngine()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold uppercase text-[10px]">
+        Execute Reallocation Plan
+      </button>
+      <button onclick="window.app.dismissReallocationAlert()" class="text-slate-400 hover:text-white px-2">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN BODY CONTENT -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 space-y-4">
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: COMMAND CENTER & DASHBOARD -->
+    <!-- ========================================================================= -->
+    <div id="tab-dashboard" class="tab-pane space-y-4">
+      
+      <!-- Top Row KPI Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="glass-card p-3 rounded-xl border border-rose-500/30 bg-rose-950/20">
+          <div class="flex items-center justify-between text-xs text-rose-400 font-semibold mb-1">
+            <span>Critical Cases</span>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div id="kpiCriticalCount" class="text-2xl font-black text-rose-500">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Immediate triage</div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-amber-500/30 bg-amber-950/20">
+          <div class="flex items-center justify-between text-xs text-amber-400 font-semibold mb-1">
+            <span>High Urgency</span>
+            <i class="fa-solid fa-circle-exclamation"></i>
+          </div>
+          <div id="kpiHighCount" class="text-2xl font-black text-amber-500">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Within 2 hrs</div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-blue-500/30 bg-blue-950/20">
+          <div class="flex items-center justify-between text-xs text-blue-400 font-semibold mb-1">
+            <span>Med / Routine</span>
+            <i class="fa-solid fa-info-circle"></i>
+          </div>
+          <div id="kpiMedLowCount" class="text-2xl font-black text-blue-400">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Non-critical queue</div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-slate-700/60">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+            <span>Affected Pop.</span>
+            <i class="fa-solid fa-people-group text-indigo-400"></i>
+          </div>
+          <div id="kpiPeopleCount" class="text-lg font-black text-white truncate">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Reported headcount</div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-slate-700/60">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+            <span>Active Routes</span>
+            <i class="fa-solid fa-route text-cyan-400"></i>
+          </div>
+          <div id="kpiActiveAllocations" class="text-2xl font-black text-cyan-400">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Dispatches in transit</div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20">
+          <div class="flex items-center justify-between text-xs text-emerald-400 font-semibold mb-1">
+            <span>Fulfillment</span>
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div id="kpiFulfillmentRate" class="text-2xl font-black text-emerald-400">0%</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Demand resolved</div>
+        </div>
+      </div>
+
+      <!-- Main GIS Map & Live Optimization Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+        <!-- Interactive Disaster Map (2 cols on lg) -->
+        <div class="lg:col-span-2 glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[520px]">
+          <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-map-location-dot text-indigo-400 mr-1.5"></i> Live Disaster GIS Command Map
+              </h2>
+              <span class="text-[11px] text-slate-400">(Velachery - Saidapet - Tambaram Basin)</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs">
+              <button onclick="window.disasterMapController.fitAll()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] border border-slate-700">
+                <i class="fa-solid fa-expand mr-1"></i> Reset View
+              </button>
+            </div>
+          </div>
+          <!-- Leaflet Map Container -->
+          <div id="disasterMap" class="flex-1 w-full relative"></div>
+          
+          <!-- Map Legend Footer -->
+          <div class="p-2 bg-slate-900/90 border-t border-slate-800 text-[11px] flex flex-wrap items-center justify-between gap-2 text-slate-400">
+            <div class="flex items-center space-x-4">
+              <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-rose-600 mr-1"></span> Critical Need</span>
+              <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1"></span> High Need</span>
+              <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1"></span> Medium/Low</span>
+              <span class="flex items-center"><span class="w-3 h-3 rounded bg-emerald-600 mr-1 flex items-center justify-center text-[8px] text-white">🏭</span> Resource Depot</span>
+              <span class="flex items-center"><span class="w-4 h-0.5 bg-blue-400 border-dashed mr-1"></span> Active Route</span>
+            </div>
+            <span class="text-indigo-400 font-mono text-[10px]">Haversine Proximity Optimization Active</span>
+          </div>
+        </div>
+
+        <!-- AI Engine Controls & Real-Time Analytics -->
+        <div class="space-y-4 flex flex-col justify-between">
+          
+          <div class="glass-card p-4 rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-indigo-950/40 to-slate-900">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-brain text-indigo-400 mr-1.5"></i> AI Decision Engine
+              </h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
+                Rule & Optimization Mode
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              Executes multi-objective matching: highest AI priority requests to nearest available depots with partial fulfillment support.
+            </p>
+
+            <div class="space-y-2">
+              <button onclick="window.app.runOptimizationEngine()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition transform active:scale-98">
+                <i class="fa-solid fa-bolt text-sm"></i>
+                <span>Run Resource Optimizer</span>
+              </button>
+
+              <button onclick="window.app.runPriorityScoring()" class="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center space-x-2 border border-slate-700 transition">
+                <i class="fa-solid fa-calculator text-slate-400 text-xs"></i>
+                <span>Recalculate Priority Scores</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Charts Container -->
+          <div class="glass-card p-3 rounded-2xl border border-slate-800 space-y-3 flex-1 flex flex-col justify-between">
+            <div>
+              <h4 class="text-xs font-bold text-slate-300 mb-1 flex items-center">
+                <i class="fa-solid fa-chart-pie text-rose-400 mr-1.5"></i> Severity Triage Breakdown
+              </h4>
+              <div class="h-28 relative">
+                <canvas id="severityChart"></canvas>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <h4 class="text-xs font-bold text-slate-300 mb-1 flex items-center">
+                <i class="fa-solid fa-chart-simple text-emerald-400 mr-1.5"></i> Resource Depot Stocks
+              </h4>
+              <div class="h-28 relative">
+                <canvas id="resourcesChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Requests Triage Queue & Search Filter Section -->
+      <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+        <div class="p-3 bg-slate-900 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div class="flex items-center space-x-2">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+              <i class="fa-solid fa-list-check text-indigo-400 mr-1.5"></i> Prioritized Emergency Requests Queue
+            </h3>
+            <span class="text-[11px] text-slate-400">(Ranked by AI Score)</span>
+          </div>
+
+          <!-- Filters & Search -->
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <div class="relative flex-1 sm:w-56">
+              <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-400"></i>
+              <input type="text" id="tableSearchInput" placeholder="Search ID, village, item..." class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg pl-7 pr-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="flex items-center space-x-1 bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+              <button data-filter="ALL" class="filter-pill px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-600 text-white">All</button>
+              <button data-filter="CRITICAL" class="filter-pill px-2 py-0.5 rounded text-[11px] font-semibold text-slate-300 hover:text-white">Critical</button>
+              <button data-filter="PENDING" class="filter-pill px-2 py-0.5 rounded text-[11px] font-semibold text-slate-300 hover:text-white">Pending</button>
+              <button data-filter="ALLOCATED" class="filter-pill px-2 py-0.5 rounded text-[11px] font-semibold text-slate-300 hover:text-white">Assigned</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900/60 border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400">
+                <th class="py-2.5 px-3">Request ID</th>
+                <th class="py-2.5 px-3">Type & Location</th>
+                <th class="py-2.5 px-3">Severity</th>
+                <th class="py-2.5 px-3">People</th>
+                <th class="py-2.5 px-3">Required Item</th>
+                <th class="py-2.5 px-3">AI Score</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTableBody" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live System Logs Drawer -->
+      <div class="glass-card rounded-xl border border-slate-800 p-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center">
+            <i class="fa-solid fa-terminal text-emerald-400 mr-1.5"></i> Optimization & Dispatch Audit Trail
+          </span>
+          <span class="text-[10px] text-slate-500 font-mono">Live Central Stream</span>
+        </div>
+        <div id="systemAuditLogs" class="max-h-28 overflow-y-auto space-y-1"></div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: CITIZEN PUBLIC EMERGENCY FORM -->
+    <!-- ========================================================================= -->
+    <div id="tab-citizen" class="tab-pane hidden space-y-4">
+      <div class="max-w-2xl mx-auto glass-card p-6 rounded-2xl border border-slate-700/80 shadow-2xl">
+        <div class="border-b border-slate-800 pb-3 mb-4">
+          <div class="flex items-center space-x-2">
+            <span class="w-8 h-8 rounded-lg bg-rose-600/30 border border-rose-500/40 flex items-center justify-center text-rose-400">
+              <i class="fa-solid fa-life-ring"></i>
+            </span>
+            <div>
+              <h2 class="text-base font-bold text-white">Public Emergency Request Portal</h2>
+              <p class="text-xs text-slate-400">Citizens with internet access can directly submit distress requests for instant AI triage.</p>
+            </div>
+          </div>
+        </div>
+
+        <form id="citizenRequestForm" class="space-y-4 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Emergency Nature</label>
+              <select name="emergencyType" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-medium">
+                <option value="Flood / Medical">Flood / Medical Emergency</option>
+                <option value="Flash Flood / Stranded">Flash Flood / Stranded on Roof</option>
+                <option value="Food & Water Shortage">Severe Food & Drinking Water Shortage</option>
+                <option value="Shelter Submerged">House/Shelter Submerged</option>
+                <option value="Elderly & Child Care">Elderly / Child Evacuation</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Number of People in Danger</label>
+              <input type="number" name="peopleCount" value="4" min="1" max="500" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-medium">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Severity Assessment</label>
+              <select name="severity" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-medium">
+                <option value="Critical" class="text-rose-400">Critical (Life-Threatening / Medical)</option>
+                <option value="High" class="text-amber-400">High (Water rising / No food)</option>
+                <option value="Medium" class="text-yellow-400">Medium (Provisions depleted)</option>
+                <option value="Low" class="text-blue-400">Low (Precautionary)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Urgency Timeframe</label>
+              <select name="urgency" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-medium">
+                <option value="Immediate">Immediate (Within 30 mins)</option>
+                <option value="Within 2 Hours">Within 2 Hours</option>
+                <option value="Within 6 Hours">Within 6 Hours</option>
+                <option value="Routine">Routine</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block font-semibold text-slate-300 mb-1">Required Resource</label>
+              <select name="requiredResource" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-medium">
+                <option value="Medicine">Medicine & First Aid Supplies</option>
+                <option value="Food Packets">Ready-to-Eat Food Packets</option>
+                <option value="Drinking Water">Drinking Water Cans</option>
+                <option value="Rescue Boat">Rescue Boat / Inflatable Raft</option>
+                <option value="Shelter Kits">Shelter Kits & Dry Tarps</option>
+                <option value="Volunteer Team">Volunteer Physical Rescue Team</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Quantity Needed</label>
+              <div class="flex items-center space-x-1">
+                <input type="number" name="quantity" value="25" min="1" required class="w-2/3 bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-medium">
+                <input type="text" name="unit" value="units" class="w-1/3 bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-300 text-center font-mono text-[11px]">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Location / Village Landmark</label>
+            <input type="text" name="locationName" value="Velachery South Lake Road" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Latitude</label>
+              <input type="text" name="lat" value="12.9790" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Longitude</label>
+              <input type="text" name="lng" value="80.2195" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Contact Name & Phone</label>
+              <input type="text" name="contactPerson" placeholder="Name / Phone Number" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Additional Notes</label>
+              <input type="text" name="notes" placeholder="e.g. Elderly patient on 2nd floor" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100">
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-xl shadow-rose-900/30 transition">
+              <i class="fa-solid fa-paper-plane mr-1.5"></i> Broadcast Emergency Distress Request
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: OPERATOR DESK & VOICE/SMS AI SIMULATOR -->
+    <!-- ========================================================================= -->
+    <div id="tab-operator" class="tab-pane hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        <!-- Operator Intake -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-800">
+          <div class="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
+            <span class="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+              <i class="fa-solid fa-phone-volume"></i>
+            </span>
+            <div>
+              <h2 class="text-sm font-bold text-white">Emergency Helpline Dispatcher Desk</h2>
+              <p class="text-xs text-slate-400">Record incoming distress calls from citizens without internet.</p>
+            </div>
+          </div>
+
+          <form id="operatorIntakeForm" class="space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Caller Name / Phone</label>
+                <input type="text" name="callerName" value="K. Sundar (+91 94441 23456)" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Location Landmark</label>
+                <input type="text" name="locationName" value="Saidapet Near Metro Pillar 120" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Type</label>
+                <select name="emergencyType" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+                  <option value="Flood / Medical">Medical Emergency</option>
+                  <option value="Flash Flood / Stranded">Stranded / Rescue</option>
+                  <option value="Food Depletion">Food & Water</option>
+                  <option value="Shelter Submerged">Shelter Loss</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Severity</label>
+                <select name="severity" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Urgency</label>
+                <select name="urgency" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+                  <option value="Immediate">Immediate</option>
+                  <option value="Within 2 Hours">Within 2 Hours</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">People</label>
+                <input type="number" name="peopleCount" value="8" min="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Item Needed</label>
+                <select name="requiredResource" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+                  <option value="Medicine">Medicine</option>
+                  <option value="Food Packets">Food Packets</option>
+                  <option value="Rescue Boat">Rescue Boat</option>
+                  <option value="Drinking Water">Drinking Water</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Quantity</label>
+                <input type="number" name="quantity" value="40" min="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200">
+                <input type="hidden" name="unit" value="units">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Operator Notes</label>
+              <textarea name="operatorNotes" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200" placeholder="Details noted during emergency phone call..."></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow">
+              <i class="fa-solid fa-headset mr-1.5"></i> Log & Queue Helpline Request
+            </button>
+          </form>
+        </div>
+
+        <!-- Voice / SMS AI Simulator -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-3">
+              <span class="w-8 h-8 rounded-lg bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <i class="fa-solid fa-microphone-lines"></i>
+              </span>
+              <div>
+                <h2 class="text-sm font-bold text-white">Voice & SMS AI Transcription Simulator</h2>
+                <p class="text-xs text-slate-400">Converts unstructured speech or raw text into structured parameters.</p>
+              </div>
+            </div>
+
+            <div class="mb-3 space-y-1.5">
+              <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Test Sample Voice Transcripts:</label>
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" class="voice-sample-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 text-[11px] border border-slate-700">
+                  <i class="fa-solid fa-play text-[10px] mr-1"></i> Sample 1: Critical Medical & Boat
+                </button>
+                <button type="button" class="voice-sample-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] border border-slate-700">
+                  <i class="fa-solid fa-play text-[10px] mr-1"></i> Sample 2: 50 People Food Shortage
+                </button>
+                <button type="button" class="voice-sample-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-blue-300 text-[11px] border border-slate-700">
+                  <i class="fa-solid fa-play text-[10px] mr-1"></i> Sample 3: Submerged Shelter Tarps
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="block text-xs font-semibold text-slate-300">Raw Transcript / SMS Message Text</label>
+              <textarea id="rawVoiceInput" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200" placeholder="Click a sample button above or type emergency text..."></textarea>
+            </div>
+
+            <div class="mt-2 flex space-x-2">
+              <button type="button" id="parseVoiceBtn" class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Run AI Entity Extraction
+              </button>
+            </div>
+
+            <div id="parsedVoiceOutput" class="hidden mt-3 p-3 bg-slate-900 rounded-xl border border-emerald-500/40 space-y-2 text-xs">
+              <div class="flex items-center justify-between text-[11px] border-b border-slate-800 pb-1">
+                <span class="font-bold text-emerald-400"><i class="fa-solid fa-check-double mr-1"></i> AI Structured Extraction</span>
+                <span class="text-slate-400">Confidence: <span id="parsedConfidence" class="text-emerald-300 font-mono">98.4%</span></span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-slate-300 text-[11px]">
+                <div>Type: <strong id="parsedEmergType" class="text-white"></strong></div>
+                <div>Headcount: <strong id="parsedPeople" class="text-white"></strong></div>
+                <div>Severity: <strong id="parsedSeverity" class="text-rose-400"></strong></div>
+                <div>Need: <strong id="parsedResource" class="text-indigo-300"></strong></div>
+                <div class="col-span-2">Location: <strong id="parsedLocation" class="text-white"></strong></div>
+              </div>
+              <button type="button" id="submitParsedVoiceBtn" class="w-full mt-2 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow">
+                Commit to Central Triage Queue
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: VILLAGE VOLUNTEER FIELD PORTAL (OFFLINE MODE) -->
+    <!-- ========================================================================= -->
+    <div id="tab-volunteer" class="tab-pane hidden space-y-4">
+      <div class="max-w-xl mx-auto">
+        <div class="mobile-volunteer-frame bg-slate-900 border-2 border-slate-700 shadow-2xl p-4 space-y-4">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div class="flex items-center space-x-2">
+              <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs">
+                <i class="fa-solid fa-hand-holding-hand"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-xs text-white">Volunteer Field Unit #04</h3>
+                <p class="text-[10px] text-slate-400">Offline-Resilient Mobile App</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center">
+                <span id="offlinePendingBadge" class="mr-1 font-mono font-black">0</span> Queued
+              </span>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-database text-indigo-400"></i>
+              <span class="text-slate-300 text-[11px]">Storage: <strong class="text-white">Local Browser Storage</strong></span>
+            </div>
+            <button id="syncOfflineBtn" class="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow">
+              <i class="fa-solid fa-arrows-rotate mr-1"></i> Sync Now
+            </button>
+          </div>
+
+          <form id="volunteerRequestForm" class="space-y-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Village Pocket / Hamlet</label>
+              <input type="text" name="locationName" value="Velachery West Fishermen Hamlet" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Emergency Nature</label>
+                <select name="emergencyType" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100">
+                  <option value="Flood Stranded">Flash Flood / Stranded</option>
+                  <option value="Medical Need">Critical Medicine Need</option>
+                  <option value="Food Shortage">Food / Baby Food</option>
+                  <option value="Water Issue">Contaminated Water</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Severity</label>
+                <select name="severity" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100">
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">People</label>
+                <input type="number" name="peopleCount" value="15" min="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100">
+              </div>
+              <div class="col-span-2">
+                <label class="block font-semibold text-slate-300 mb-1">Required Resource</label>
+                <select name="requiredResource" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100">
+                  <option value="Drinking Water">Drinking Water</option>
+                  <option value="Food Packets">Food Packets</option>
+                  <option value="Medicine">Medicine</option>
+                  <option value="Rescue Boat">Rescue Boat</option>
+                  <option value="Volunteer Team">Volunteer Team</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Quantity</label>
+                <input type="number" name="quantity" value="100" min="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100">
+                <input type="hidden" name="unit" value="units">
+                <input type="hidden" name="urgency" value="Within 2 Hours">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Volunteer Name</label>
+                <input type="text" name="volunteerName" value="Volunteer Arul" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Field Observation</label>
+              <textarea name="fieldNotes" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100" placeholder="Water height, road blockages, access paths..."></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-amber-900/30">
+              <i class="fa-solid fa-floppy-disk mr-1.5"></i> Record Field Request (Offline/Online)
+            </button>
+          </form>
+
+          <div class="pt-3 border-t border-slate-800">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Local Offline Sync Queue</span>
+              <span class="text-[10px] text-slate-500">Auto-syncs when online</span>
+            </h4>
+            <div id="offlineRequestsList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 5: RESOURCE DEPOTS -->
+    <!-- ========================================================================= -->
+    <div id="tab-resources" class="tab-pane hidden space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center">
+            <i class="fa-solid fa-boxes-stacked text-indigo-400 mr-2"></i> Disaster Relief Resource Depots
+          </h2>
+          <p class="text-xs text-slate-400">Monitor live warehouse stock levels, allocate provisions, and simulate flood outages.</p>
+        </div>
+      </div>
+      <div id="resourceCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 6: DISPATCHES & ALLOCATIONS -->
+    <!-- ========================================================================= -->
+    <div id="tab-allocations" class="tab-pane hidden space-y-4">
+      <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+        <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+              <i class="fa-solid fa-truck-ramp-box text-cyan-400 mr-1.5"></i> Active Relief Logistics & Routes Ledger
+            </h3>
+            <p class="text-[11px] text-slate-400">Tracks Assigned, In Transit, Delivered, and Partial Fulfillment statuses.</p>
+          </div>
+          <button onclick="window.app.runOptimizationEngine()" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow">
+            <i class="fa-solid fa-bolt mr-1"></i> Re-Optimize Routes
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900/60 border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400">
+                <th class="py-2.5 px-3">Allocation ID</th>
+                <th class="py-2.5 px-3">Request ID</th>
+                <th class="py-2.5 px-3">Origin Depot</th>
+                <th class="py-2.5 px-3">Allocated Qty</th>
+                <th class="py-2.5 px-3">Transit Distance & ETA</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="allocationsTableBody" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- AI PRIORITY WEIGHTS CONFIGURATION MODAL -->
+  <div id="aiSettingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-sliders text-indigo-400"></i>
+          <h3 class="font-bold text-sm text-white">Configure AI Priority Weights</h3>
+        </div>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-300">
+        Formula: <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">Score = (w₁×Severity) + (w₂×Urgency) + (w₃×People) + (w₄×WaitTime)</code>
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <div class="flex justify-between text-slate-300 font-semibold mb-1">
+            <span>Severity Weight (w₁)</span>
+            <span id="valSeverity" class="font-mono text-indigo-400">40%</span>
+          </div>
+          <input type="range" id="weightSeverity" min="0.05" max="0.80" step="0.05" value="0.40" class="w-full accent-indigo-500">
+        </div>
+
+        <div>
+          <div class="flex justify-between text-slate-300 font-semibold mb-1">
+            <span>Urgency Weight (w₂)</span>
+            <span id="valUrgency" class="font-mono text-indigo-400">30%</span>
+          </div>
+          <input type="range" id="weightUrgency" min="0.05" max="0.80" step="0.05" value="0.30" class="w-full accent-indigo-500">
+        </div>
+
+        <div>
+          <div class="flex justify-between text-slate-300 font-semibold mb-1">
+            <span>People Count Weight (w₃)</span>
+            <span id="valPeople" class="font-mono text-indigo-400">15%</span>
+          </div>
+          <input type="range" id="weightPeople" min="0.05" max="0.80" step="0.05" value="0.15" class="w-full accent-indigo-500">
+        </div>
+
+        <div>
+          <div class="flex justify-between text-slate-300 font-semibold mb-1">
+            <span>Waiting Time Weight (w₄)</span>
+            <span id="valWaiting" class="font-mono text-indigo-400">15%</span>
+          </div>
+          <input type="range" id="weightWaiting" min="0.05" max="0.80" step="0.05" value="0.15" class="w-full accent-indigo-500">
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-800 flex justify-end space-x-2">
+        <button id="applyWeightsBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow">
+          Apply & Recalculate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING NOTIFICATION TOAST CONTAINER -->
+  <div id="notificationContainer" class="fixed bottom-4 right-4 z-50 space-y-2 flex flex-col items-end pointer-events-none"></div>
+
+  <!-- ========================================================================= -->
+  <!-- INLINED JAVASCRIPT LOGIC (ALL ENGINES, DATA, MAP & CONTROLLERS) -->
+  <!-- ========================================================================= -->
+  <script>
+    // --- 1. DATASET & CONSTANTS ---
+    const INITIAL_REQUESTS = [
+      {
+        id: "REQ-001",
+        emergencyType: "Flood / Medical",
+        peopleCount: 5,
+        locationName: "Saidapet Bridge Colony",
+        lat: 13.0213,
+        lng: 80.2231,
+        severity: "Critical",
+        urgency: "Immediate",
+        requiredResource: "Medicine",
+        quantity: 50,
+        unit: "units",
+        requestTime: "10:30 AM",
+        waitingMinutes: 45,
+        status: "Pending",
+        source: "Phone Call",
+        contactPerson: "Dr. K. Ramanathan",
+        notes: "3 diabetic elderly patients stranded on second floor, insulin and first-aid kits required urgently.",
+        allocatedQuantity: 0,
+        unmetQuantity: 50,
+        allocationId: null
+      },
+      {
+        id: "REQ-002",
+        emergencyType: "Flash Flood / Stranded",
+        peopleCount: 14,
+        locationName: "Velachery Lakeview Sector",
+        lat: 12.9815,
+        lng: 80.2180,
+        severity: "Critical",
+        urgency: "Immediate",
+        requiredResource: "Rescue Boat",
+        quantity: 2,
+        unit: "boats",
+        requestTime: "10:35 AM",
+        waitingMinutes: 40,
+        status: "Pending",
+        source: "Website",
+        contactPerson: "Praveen Kumar",
+        notes: "Ground floor completely submerged, water level rising. 4 children and 2 pregnant women trapped.",
+        allocatedQuantity: 0,
+        unmetQuantity: 2,
+        allocationId: null
+      },
+      {
+        id: "REQ-003",
+        emergencyType: "Food Depletion",
+        peopleCount: 45,
+        locationName: "Madipakkam Relief Pocket",
+        lat: 12.9623,
+        lng: 80.1986,
+        severity: "High",
+        urgency: "Within 2 Hours",
+        requiredResource: "Food Packets",
+        quantity: 120,
+        unit: "packets",
+        requestTime: "10:40 AM",
+        waitingMinutes: 35,
+        status: "Pending",
+        source: "Volunteer",
+        contactPerson: "Volunteer Sangeetha",
+        notes: "Community hall serving 45 evacuated residents has run out of food provisions since morning.",
+        allocatedQuantity: 0,
+        unmetQuantity: 120,
+        allocationId: null
+      },
+      {
+        id: "REQ-004",
+        emergencyType: "Shelter Submerged",
+        peopleCount: 22,
+        locationName: "Tambaram West Lowlands",
+        lat: 12.9249,
+        lng: 80.1188,
+        severity: "High",
+        urgency: "Within 2 Hours",
+        requiredResource: "Shelter Kits",
+        quantity: 15,
+        unit: "kits",
+        requestTime: "10:45 AM",
+        waitingMinutes: 30,
+        status: "Pending",
+        source: "SMS",
+        contactPerson: "Anand Murugan",
+        notes: "Makeshift temporary tents flooded. Need emergency tarps, blankets, and dry bedding.",
+        allocatedQuantity: 0,
+        unmetQuantity: 15,
+        allocationId: null
+      },
+      {
+        id: "REQ-005",
+        emergencyType: "Drinking Water Contamination",
+        peopleCount: 65,
+        locationName: "Perungudi OMR Junction",
+        lat: 12.9654,
+        lng: 80.2461,
+        severity: "Medium",
+        urgency: "Within 6 Hours",
+        requiredResource: "Drinking Water",
+        quantity: 250,
+        unit: "liters",
+        requestTime: "10:50 AM",
+        waitingMinutes: 25,
+        status: "Pending",
+        source: "Website",
+        contactPerson: "Meena Swaminathan",
+        notes: "Local borewell flooded with dirty runoff water. No potable water available.",
+        allocatedQuantity: 0,
+        unmetQuantity: 250,
+        allocationId: null
+      },
+      {
+        id: "REQ-006",
+        emergencyType: "Elderly & Vulnerable Care",
+        peopleCount: 8,
+        locationName: "Kotturpuram Riverbank",
+        lat: 13.0234,
+        lng: 80.2415,
+        severity: "High",
+        urgency: "Immediate",
+        requiredResource: "Volunteer Team",
+        quantity: 4,
+        unit: "volunteers",
+        requestTime: "10:55 AM",
+        waitingMinutes: 20,
+        status: "Pending",
+        source: "Phone Call",
+        contactPerson: "Rev. Father Joseph",
+        notes: "Special physical assistance needed to carry 3 non-ambulatory elderly individuals to higher ground.",
+        allocatedQuantity: 0,
+        unmetQuantity: 4,
+        allocationId: null
+      }
+    ];
+
+    const INITIAL_RESOURCES = [
+      {
+        id: "RES-101",
+        name: "Central Disaster Medical Depot",
+        resourceType: "Medicine",
+        totalCapacity: 200,
+        availableQuantity: 140,
+        allocatedQuantity: 0,
+        unit: "units",
+        lat: 13.0418,
+        lng: 80.2341,
+        locationName: "T. Nagar Relief Hub",
+        status: "Available",
+        contact: "+91 98401 22334"
+      },
+      {
+        id: "RES-102",
+        name: "South Central Community Kitchen",
+        resourceType: "Food Packets",
+        totalCapacity: 500,
+        availableQuantity: 350,
+        allocatedQuantity: 0,
+        unit: "packets",
+        lat: 12.9930,
+        lng: 80.2085,
+        locationName: "Guindy Industrial Estate Base",
+        status: "Available",
+        contact: "+91 98402 33445"
+      },
+      {
+        id: "RES-103",
+        name: "NDRF Flood Rescue Boat Station",
+        resourceType: "Rescue Boat",
+        totalCapacity: 8,
+        availableQuantity: 5,
+        allocatedQuantity: 0,
+        unit: "boats",
+        lat: 12.9850,
+        lng: 80.2520,
+        locationName: "Thiruvanmiyur Coastal Base",
+        status: "Available",
+        contact: "+91 98403 44556"
+      },
+      {
+        id: "RES-104",
+        name: "Metro Clean Water Dispatch Hub",
+        resourceType: "Drinking Water",
+        totalCapacity: 1000,
+        availableQuantity: 750,
+        allocatedQuantity: 0,
+        unit: "liters",
+        lat: 13.0105,
+        lng: 80.2150,
+        locationName: "Saidapet Metro Yard",
+        status: "Available",
+        contact: "+91 98404 55667"
+      },
+      {
+        id: "RES-105",
+        name: "State Emergency Shelter Warehouse",
+        resourceType: "Shelter Kits",
+        totalCapacity: 80,
+        availableQuantity: 45,
+        allocatedQuantity: 0,
+        unit: "kits",
+        lat: 12.9360,
+        lng: 80.1420,
+        locationName: "Chromepet Central Depot",
+        status: "Available",
+        contact: "+91 98405 66778"
+      },
+      {
+        id: "RES-106",
+        name: "Youth Volunteer Brigade Camp",
+        resourceType: "Volunteer Team",
+        totalCapacity: 60,
+        availableQuantity: 35,
+        allocatedQuantity: 0,
+        unit: "volunteers",
+        lat: 13.0070,
+        lng: 80.2360,
+        locationName: "Anna University Relief Center",
+        status: "Available",
+        contact: "+91 98406 77889"
+      },
+      {
+        id: "RES-107",
+        name: "Tambaram Secondary Medical Depot",
+        resourceType: "Medicine",
+        totalCapacity: 100,
+        availableQuantity: 60,
+        allocatedQuantity: 0,
+        unit: "units",
+        lat: 12.9220,
+        lng: 80.1250,
+        locationName: "Tambaram Sanatorium Base",
+        status: "Available",
+        contact: "+91 98407 88990"
+      }
+    ];
+
+    const DEFAULT_WEIGHTS = { severity: 0.40, urgency: 0.30, peopleCount: 0.15, waitingTime: 0.15 };
+    const SEVERITY_SCORES = { "Critical": 100, "High": 70, "Medium": 40, "Low": 20 };
+    const URGENCY_SCORES = { "Immediate": 100, "Within 2 Hours": 75, "Within 6 Hours": 50, "Routine": 25 };
+    const RESOURCE_ICONS = {
+      "Medicine": "fa-kit-medical",
+      "Food Packets": "fa-bowl-rice",
+      "Drinking Water": "fa-bottle-water",
+      "Rescue Boat": "fa-life-ring",
+      "Shelter Kits": "fa-tents",
+      "Volunteer Team": "fa-people-carry-box"
+    };
+
+    // --- 2. PRIORITY ENGINE ---
+    class PriorityEngine {
+      constructor(weights = DEFAULT_WEIGHTS) {
+        this.weights = { ...weights };
+      }
+      setWeights(newWeights) {
+        this.weights = { ...this.weights, ...newWeights };
+        const sum = this.weights.severity + this.weights.urgency + this.weights.peopleCount + this.weights.waitingTime;
+        if (sum > 0 && Math.abs(sum - 1.0) > 0.01) {
+          this.weights.severity /= sum;
+          this.weights.urgency /= sum;
+          this.weights.peopleCount /= sum;
+          this.weights.waitingTime /= sum;
+        }
+      }
+      computePeopleScore(peopleCount) {
+        if (!peopleCount || peopleCount <= 0) return 10;
+        const clamped = Math.min(peopleCount, 100);
+        return Math.min(100, Math.round(25 + (Math.log10(clamped) / 2) * 75));
+      }
+      computeWaitingScore(waitingMinutes) {
+        if (!waitingMinutes || waitingMinutes <= 0) return 10;
+        return Math.min(100, Math.round(15 + (waitingMinutes / 60) * 70));
+      }
+      calculateScore(request) {
+        const rawSeverity = SEVERITY_SCORES[request.severity] || 30;
+        const rawUrgency = URGENCY_SCORES[request.urgency] || 25;
+        const rawPeople = this.computePeopleScore(request.peopleCount);
+        const rawWaiting = this.computeWaitingScore(request.waitingMinutes || 0);
+
+        const weightedSev = rawSeverity * this.weights.severity;
+        const weightedUrg = rawUrgency * this.weights.urgency;
+        const weightedPpl = rawPeople * this.weights.peopleCount;
+        const weightedWait = rawWaiting * this.weights.waitingTime;
+        const totalScore = Number((weightedSev + weightedUrg + weightedPpl + weightedWait).toFixed(1));
+
+        return {
+          totalScore,
+          explanation: `Score ${totalScore}: Sev(${weightedSev.toFixed(1)}) + Urg(${weightedUrg.toFixed(1)}) + Ppl(${weightedPpl.toFixed(1)}) + Wait(${weightedWait.toFixed(1)})`
+        };
+      }
+      rankRequests(requests) {
+        return requests.map(req => {
+          const scoreObj = this.calculateScore(req);
+          return { ...req, priorityScore: scoreObj.totalScore, scoreDetails: scoreObj };
+        }).sort((a, b) => b.priorityScore - a.priorityScore);
+      }
+    }
+    window.priorityEngine = new PriorityEngine();
+
+    // --- 3. OPTIMIZER ENGINE ---
+    class ResourceOptimizer {
+      constructor() { this.allocationCounter = 100; }
+      calculateDistanceKm(lat1, lon1, lat2, lon2) {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return 5.0;
+        const R = 6371;
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
+      }
+      calculateEtaMinutes(distanceKm) {
+        return Math.max(5, Math.round((distanceKm / 25) * 60));
+      }
+      runAllocation(requests, resources) {
+        const currentRequests = JSON.parse(JSON.stringify(requests));
+        const currentResources = JSON.parse(JSON.stringify(resources));
+        const newAllocations = [];
+        const logs = [];
+        const unmetDemands = [];
+
+        const eligibleRequests = currentRequests.filter(r => 
+          r.status === "Pending" || r.status === "Synced" || (r.status === "Partially Allocated" && r.unmetQuantity > 0)
+        );
+
+        logs.push(`Evaluating allocation for ${eligibleRequests.length} pending requests.`);
+
+        eligibleRequests.forEach(req => {
+          const neededQty = req.status === "Partially Allocated" ? req.unmetQuantity : req.quantity;
+          if (neededQty <= 0) return;
+
+          const candidates = currentResources.filter(res => 
+            res.resourceType === req.requiredResource && res.status === "Available" && res.availableQuantity > 0
+          );
+
+          if (candidates.length === 0) {
+            logs.push(`[OUT OF STOCK] No available depot for ${req.requiredResource} (${req.id}). Added to waitlist.`);
+            if (req.status !== "Partially Allocated") req.status = "Waitlist - Out of Stock";
+            unmetDemands.push({ requestId: req.id, unmetQuantity: neededQty });
+            return;
+          }
+
+          candidates.forEach(cand => {
+            cand._tempDist = this.calculateDistanceKm(req.lat, req.lng, cand.lat, cand.lng);
+          });
+          candidates.sort((a, b) => a._tempDist - b._tempDist);
+
+          const bestDepot = candidates[0];
+          const distance = bestDepot._tempDist;
+          const eta = this.calculateEtaMinutes(distance);
+
+          if (bestDepot.availableQuantity >= neededQty) {
+            bestDepot.availableQuantity -= neededQty;
+            bestDepot.allocatedQuantity = (bestDepot.allocatedQuantity || 0) + neededQty;
+
+            const allocId = `ALC-${++this.allocationCounter}`;
+            newAllocations.push({
+              allocationId: allocId,
+              requestId: req.id,
+              resourceId: bestDepot.id,
+              depotName: bestDepot.name,
+              resourceType: req.requiredResource,
+              allocatedQuantity: neededQty,
+              unmetQuantity: 0,
+              unit: req.unit,
+              distanceKm: distance,
+              etaMinutes: eta,
+              status: "Assigned",
+              route: { from: [bestDepot.lat, bestDepot.lng], to: [req.lat, req.lng] }
+            });
+
+            req.allocatedQuantity = (req.allocatedQuantity || 0) + neededQty;
+            req.unmetQuantity = 0;
+            req.status = "Assigned";
+            req.allocationId = allocId;
+            req.assignedDepot = bestDepot.name;
+            logs.push(`[MATCH] ${req.id} fully allocated from ${bestDepot.name} (${distance} km).`);
+          } else {
+            const partialQty = bestDepot.availableQuantity;
+            const remainingUnmet = neededQty - partialQty;
+            bestDepot.availableQuantity = 0;
+            bestDepot.allocatedQuantity = (bestDepot.allocatedQuantity || 0) + partialQty;
+
+            const allocId = `ALC-${++this.allocationCounter}`;
+            newAllocations.push({
+              allocationId: allocId,
+              requestId: req.id,
+              resourceId: bestDepot.id,
+              depotName: bestDepot.name,
+              resourceType: req.requiredResource,
+              allocatedQuantity: partialQty,
+              unmetQuantity: remainingUnmet,
+              unit: req.unit,
+              distanceKm: distance,
+              etaMinutes: eta,
+              status: "Assigned (Partial)",
+              route: { from: [bestDepot.lat, bestDepot.lng], to: [req.lat, req.lng] }
+            });
+
+            req.allocatedQuantity = (req.allocatedQuantity || 0) + partialQty;
+            req.unmetQuantity = remainingUnmet;
+            req.status = "Partially Allocated";
+            req.allocationId = allocId;
+            req.assignedDepot = bestDepot.name;
+            unmetDemands.push({ requestId: req.id, unmetQuantity: remainingUnmet });
+            logs.push(`[PARTIAL] ${req.id} partially fulfilled with ${partialQty} ${req.unit} from ${bestDepot.name}.`);
+          }
+        });
+
+        return { updatedRequests: currentRequests, updatedResources: currentResources, newAllocations, logs, unmetDemands };
+      }
+      handleResourceDisruption(depotId, requests, resources, activeAllocations) {
+        const logs = [];
+        const updatedResources = resources.map(res => {
+          if (res.id === depotId) {
+            logs.push(`[ALERT] Depot ${res.name} marked UNAVAILABLE.`);
+            return { ...res, status: "Unavailable" };
+          }
+          return res;
+        });
+
+        const affectedAllocations = activeAllocations.filter(a => a.resourceId === depotId && a.status !== "Delivered");
+        const updatedRequests = requests.map(req => {
+          const wasAssigned = affectedAllocations.some(a => a.requestId === req.id);
+          if (wasAssigned) {
+            logs.push(`[REALLOCATE] Request ${req.id} released from disrupted depot. Re-entering queue.`);
+            return { ...req, status: "Pending", allocationId: null, assignedDepot: null, allocatedQuantity: 0, unmetQuantity: req.quantity };
+          }
+          return req;
+        });
+
+        return {
+          updatedRequests,
+          updatedResources,
+          remainingAllocations: activeAllocations.filter(a => a.resourceId !== depotId),
+          logs
+        };
+      }
+    }
+    window.resourceOptimizer = new ResourceOptimizer();
+
+    // --- 4. OFFLINE STORAGE & SYNC ---
+    class OfflineStorageEngine {
+      constructor() {
+        this.STORAGE_KEY = "agy_disaster_offline_queue";
+        this.isSimulatedOffline = false;
+        this.listeners = [];
+      }
+      isOnline() { return !this.isSimulatedOffline; }
+      toggleSimulatedOffline() {
+        this.isSimulatedOffline = !this.isSimulatedOffline;
+        this.notify();
+        return this.isOnline();
+      }
+      setSimulatedOffline(val) {
+        this.isSimulatedOffline = val;
+        this.notify();
+      }
+      onNetworkChange(cb) { this.listeners.push(cb); }
+      notify() {
+        const state = this.isOnline();
+        this.listeners.forEach(cb => cb(state));
+      }
+      getQueue() {
+        try {
+          const d = localStorage.getItem(this.STORAGE_KEY);
+          return d ? JSON.parse(d) : [];
+        } catch(e) { return []; }
+      }
+      saveQueue(q) {
+        try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(q)); } catch(e){}
+      }
+      enqueueOfflineRequest(req) {
+        const q = this.getQueue();
+        const item = { ...req, status: "Offline Pending", offlineTimestamp: new Date().toISOString() };
+        q.push(item);
+        this.saveQueue(q);
+        return item;
+      }
+      getPendingCount() { return this.getQueue().length; }
+      async syncPendingRequests() {
+        const q = this.getQueue();
+        if (q.length === 0) return { count: 0, syncedItems: [] };
+        const syncedItems = [];
+        for (const item of q) {
+          await new Promise(r => setTimeout(r, 300));
+          syncedItems.push({ ...item, status: "Synced" });
+        }
+        this.saveQueue([]);
+        return { count: syncedItems.length, syncedItems };
+      }
+    }
+    window.offlineStorage = new OfflineStorageEngine();
+
+    // --- 5. DISASTER MAP CONTROLLER ---
+    class DisasterMapController {
+      constructor() {
+        this.map = null;
+        this.requestMarkers = {};
+        this.resourceMarkers = {};
+        this.routePolylines = [];
+        this.isMapReady = false;
+      }
+      init() {
+        if (!document.getElementById("disasterMap")) return;
+        this.map = L.map("disasterMap", { center: [12.9950, 80.2100], zoom: 12 });
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; OpenStreetMap & CARTO',
+          maxZoom: 19
+        }).addTo(this.map);
+
+        // Flood Hazard Zones
+        L.circle([12.9815, 80.2180], { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.18, radius: 1800, weight: 1.5, dashArray: '5, 5' })
+          .bindPopup("<b>⚠️ High Inundation Hazard Zone</b><br>Velachery Lake Basin.").addTo(this.map);
+        L.circle([13.0213, 80.2231], { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.15, radius: 1400, weight: 1.5, dashArray: '5, 5' })
+          .bindPopup("<b>⚠️ Moderate Flood Zone</b><br>Saidapet Causeway breach area.").addTo(this.map);
+
+        this.isMapReady = true;
+        setTimeout(() => this.map.invalidateSize(), 300);
+      }
+      createRequestIcon(severity) {
+        let bgClass = "bg-blue-500 text-white border-blue-200";
+        let pulse = "";
+        if (severity === "Critical") {
+          bgClass = "bg-rose-600 text-white border-rose-300 ring-4 ring-rose-400/40";
+          pulse = `<div class="absolute -inset-2 rounded-full bg-rose-600 animate-ping opacity-60"></div>`;
+        } else if (severity === "High") {
+          bgClass = "bg-amber-500 text-white border-amber-300";
+          pulse = `<div class="absolute -inset-1 rounded-full bg-amber-500 animate-pulse opacity-50"></div>`;
+        }
+        return L.divIcon({
+          className: 'custom-disaster-marker',
+          html: `<div class="relative flex items-center justify-center w-8 h-8 rounded-full ${bgClass} shadow-xl border-2 font-bold text-xs cursor-pointer">${pulse}<i class="fa-solid fa-triangle-exclamation text-xs"></i></div>`,
+          iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18]
+        });
+      }
+      createDepotIcon(res) {
+        const isAvail = res.status === "Available" && res.availableQuantity > 0;
+        return L.divIcon({
+          className: 'custom-depot-marker',
+          html: `<div class="relative flex items-center justify-center w-9 h-9 rounded-xl ${isAvail ? 'bg-emerald-600 border-emerald-300' : 'bg-zinc-700 border-zinc-500'} text-white shadow-xl border-2 cursor-pointer"><i class="fa-solid fa-warehouse text-sm"></i><span class="absolute -top-1 -right-1 w-3 h-3 rounded-full ${isAvail ? 'bg-emerald-400' : 'bg-rose-500'} ring-2 ring-white"></span></div>`,
+          iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20]
+        });
+      }
+      updateMarkers(requests, resources, allocations = []) {
+        if (!this.map) return;
+        Object.values(this.requestMarkers).forEach(m => this.map.removeLayer(m));
+        Object.values(this.resourceMarkers).forEach(m => this.map.removeLayer(m));
+        this.routePolylines.forEach(l => this.map.removeLayer(l));
+        this.requestMarkers = {}; this.resourceMarkers = {}; this.routePolylines = [];
+
+        resources.forEach(res => {
+          if (!res.lat || !res.lng) return;
+          const marker = L.marker([res.lat, res.lng], { icon: this.createDepotIcon(res) })
+            .bindPopup(`<div class="p-2 min-w-[200px]"><div class="font-bold text-slate-800">${res.name}</div><div class="text-xs text-slate-600 mt-1">Item: ${res.resourceType}<br>Available: <strong>${res.availableQuantity} / ${res.totalCapacity} ${res.unit}</strong><br>Status: <span class="${res.status === 'Available' ? 'text-emerald-600' : 'text-rose-600'} font-bold">${res.status}</span></div></div>`)
+            .addTo(this.map);
+          this.resourceMarkers[res.id] = marker;
+        });
+
+        requests.forEach(req => {
+          if (!req.lat || !req.lng) return;
+          const marker = L.marker([req.lat, req.lng], { icon: this.createRequestIcon(req.severity) })
+            .bindPopup(`<div class="p-2 min-w-[220px]"><div class="font-bold text-slate-900">${req.id} - ${req.emergencyType}</div><div class="text-xs text-slate-600 mt-1">Severity: <strong>${req.severity}</strong><br>People: <strong>${req.peopleCount}</strong><br>Demand: <strong>${req.quantity} ${req.unit} ${req.requiredResource}</strong><br>Status: <strong>${req.status}</strong></div><div class="mt-2 text-right"><button onclick="window.app.quickAllocate('${req.id}')" class="text-xs px-2.5 py-1 bg-indigo-600 text-white rounded font-medium">Allocate Now</button></div></div>`)
+            .addTo(this.map);
+          this.requestMarkers[req.id] = marker;
+        });
+
+        allocations.forEach(alloc => {
+          if (alloc.route && alloc.route.from && alloc.route.to) {
+            const polyline = L.polyline([alloc.route.from, alloc.route.to], { color: '#3b82f6', weight: 3.5, opacity: 0.85, dashArray: '8, 8' })
+              .bindTooltip(`🚚 <b>${alloc.allocationId}</b><br>${alloc.distanceKm} km | ETA: ${alloc.etaMinutes}m`, { sticky: true, className: 'route-tooltip' })
+              .addTo(this.map);
+            this.routePolylines.push(polyline);
+          }
+        });
+      }
+      flyToRequest(id) {
+        const m = this.requestMarkers[id];
+        if (m) { this.map.setView(m.getLatLng(), 14, { animate: true }); m.openPopup(); }
+      }
+      fitAll() {
+        if (!this.map) return;
+        const all = [...Object.values(this.requestMarkers), ...Object.values(this.resourceMarkers)];
+        if (all.length > 0) this.map.fitBounds(L.featureGroup(all).getBounds().pad(0.15));
+      }
+    }
+    window.disasterMapController = new DisasterMapController();
+
+    // --- 6. DEMO SCENARIO RUNNER (SECTION 15) ---
+    class DemoScenarioRunner {
+      constructor() {
+        this.currentStep = 0;
+        this.totalSteps = 10;
+        this.steps = [
+          { step: 1, title: "Step 1: Create 3 Initial Requests", badge: "Intake", description: "Generate 3 requests: Critical Medical, High Food, and Medium Shelter.", action: () => this.s1() },
+          { step: 2, title: "Step 2: Add Disaster Resources", badge: "Inventory", description: "Ensure food, medicine, vehicle, and volunteer depots are stocked.", action: () => this.s2() },
+          { step: 3, title: "Step 3: Run AI Priority Engine", badge: "AI Scoring", description: "Calculate priority scores based on Severity, Urgency, People, and Wait Time.", action: () => this.s3() },
+          { step: 4, title: "Step 4: Verify Critical Request Ranked #1", badge: "Priority Queue", description: "Confirm Critical Medical case is ranked at top of triage queue.", action: () => this.s4() },
+          { step: 5, title: "Step 5: Match Nearest Resource & Show Route", badge: "GIS Routing", description: "Match top requests to closest depots and draw route lines on map.", action: () => this.s5() },
+          { step: 6, title: "Step 6: Review Command Dashboard Status", badge: "KPIs", description: "Inspect updated KPI counters, active dispatches, and fulfillment rates.", action: () => this.s6() },
+          { step: 7, title: "Step 7: Sudden New Critical Request Arrival", badge: "Surge Event", description: "Simulate emergency REQ-CRIT-99 (ICU power failure & trapped patients).", action: () => this.s7() },
+          { step: 8, title: "Step 8: Dynamic Reallocation Trigger", badge: "Reallocation", description: "Execute dynamic reallocation alert to prioritize new life-safety crisis.", action: () => this.s8() },
+          { step: 9, title: "Step 9: Resource Disruption & Fallback Reroute", badge: "Resilience", description: "Mark RES-101 flooded/unavailable. The system automatically reroutes to backup depot.", action: () => this.s9() },
+          { step: 10, title: "Step 10: Volunteer Offline Mode & Auto-Sync", badge: "Offline Sync", description: "Cut connection, submit volunteer request offline, restore network, auto-sync!", action: () => this.s10() }
+        ];
+      }
+      goToStep(n) {
+        if (n < 1 || n > this.totalSteps) return;
+        this.currentStep = n;
+        this.steps[n - 1].action();
+        this.updateUI();
+      }
+      nextStep() { if (this.currentStep < this.totalSteps) this.goToStep(this.currentStep + 1); }
+      prevStep() { if (this.currentStep > 1) this.goToStep(this.currentStep - 1); }
+      resetDemo() {
+        this.currentStep = 0;
+        window.app.resetToDefaults();
+        this.updateUI();
+      }
+      s1() {
+        window.app.switchTab("dashboard");
+        window.app.requests = [
+          { id: "DEMO-01", emergencyType: "Flash Flood / Medical", peopleCount: 6, locationName: "Saidapet Causeway", lat: 13.0213, lng: 80.2231, severity: "Critical", urgency: "Immediate", requiredResource: "Medicine", quantity: 40, unit: "units", requestTime: "09:30 AM", waitingMinutes: 50, status: "Pending", allocatedQuantity: 0, unmetQuantity: 40 },
+          { id: "DEMO-02", emergencyType: "Food Depletion", peopleCount: 35, locationName: "Velachery Lowlands", lat: 12.9815, lng: 80.2180, severity: "High", urgency: "Within 2 Hours", requiredResource: "Food Packets", quantity: 100, unit: "packets", requestTime: "09:45 AM", waitingMinutes: 35, status: "Pending", allocatedQuantity: 0, unmetQuantity: 100 },
+          { id: "DEMO-03", emergencyType: "Temporary Shelter Inundation", peopleCount: 18, locationName: "Tambaram Camp", lat: 12.9249, lng: 80.1188, severity: "Medium", urgency: "Within 6 Hours", requiredResource: "Shelter Kits", quantity: 12, unit: "kits", requestTime: "10:00 AM", waitingMinutes: 20, status: "Pending", allocatedQuantity: 0, unmetQuantity: 12 }
+        ];
+        window.app.allocations = [];
+        window.app.refreshDashboard();
+        window.app.showNotification("success", "Demo Step 1: 3 Baseline Requests Created!");
+      }
+      s2() {
+        window.app.switchTab("resources");
+        window.app.showNotification("success", "Demo Step 2: Disaster Depots Verified & Available!");
+      }
+      s3() {
+        window.app.switchTab("dashboard");
+        window.app.runPriorityScoring();
+        window.app.showNotification("info", "Demo Step 3: AI Priority Engine calculated scores!");
+      }
+      s4() {
+        window.app.switchTab("dashboard");
+        const topReq = window.app.requests[0];
+        if (topReq) {
+          window.disasterMapController.flyToRequest(topReq.id);
+          window.app.showNotification("warning", `Demo Step 4: [Verified] ${topReq.id} ranked #1 with Score ${topReq.priorityScore}!`);
+        }
+      }
+      s5() {
+        window.app.switchTab("dashboard");
+        window.app.runOptimizationEngine();
+        window.app.showNotification("success", "Demo Step 5: Nearest Depots matched & dispatch routes drawn!");
+      }
+      s6() {
+        window.app.switchTab("dashboard");
+        window.disasterMapController.fitAll();
+        window.app.showNotification("info", "Demo Step 6: Command Center KPIs updated!");
+      }
+      s7() {
+        window.app.switchTab("dashboard");
+        const surge = { id: "REQ-CRIT-99", emergencyType: "ICU Power Loss / Trapped", peopleCount: 16, locationName: "Kotturpuram Clinic", lat: 13.0234, lng: 80.2415, severity: "Critical", urgency: "Immediate", requiredResource: "Medicine", quantity: 50, unit: "units", requestTime: "Just now", waitingMinutes: 60, status: "Pending", allocatedQuantity: 0, unmetQuantity: 50 };
+        window.app.requests.unshift(surge);
+        window.app.runPriorityScoring();
+        window.disasterMapController.flyToRequest(surge.id);
+        window.app.triggerReallocationAlert("NEW HIGH-PRIORITY CRITICAL EMERGENCY: REQ-CRIT-99 at Kotturpuram!");
+      }
+      s8() {
+        window.app.switchTab("dashboard");
+        window.app.runOptimizationEngine();
+        window.app.showNotification("success", "Demo Step 8: Reallocation completed! Surge request fulfilled.");
+      }
+      s9() {
+        window.app.switchTab("dashboard");
+        window.app.toggleDepotStatus("RES-101");
+        window.app.showNotification("warning", "Demo Step 9: RES-101 marked flooded. Rerouted to backup depot!");
+      }
+      s10() {
+        window.app.switchTab("volunteer");
+        window.offlineStorage.setSimulatedOffline(true);
+        window.app.showNotification("warning", "Demo Step 10: Connectivity cut. Submitting offline request...");
+        setTimeout(() => {
+          window.offlineStorage.enqueueOfflineRequest({
+            id: "VOL-OFF-88", emergencyType: "Village Flooded / Ration Out", peopleCount: 28, locationName: "Madipakkam Interior", lat: 12.9640, lng: 80.2010, severity: "High", urgency: "Within 2 Hours", requiredResource: "Drinking Water", quantity: 150, unit: "liters", status: "Offline Pending"
+          });
+          window.app.refreshVolunteerQueue();
+          window.app.showNotification("info", "Request saved offline in phone's local storage queue.");
+          setTimeout(async () => {
+            window.offlineStorage.setSimulatedOffline(false);
+            window.app.showNotification("success", "Connectivity restored! Auto-synchronizing...");
+            await window.app.syncOfflineQueue();
+            window.app.switchTab("dashboard");
+          }, 3000);
+        }, 1200);
+      }
+      updateUI() {
+        const b = document.getElementById("demoScenarioBanner");
+        if (!b) return;
+        if (this.currentStep === 0) { b.classList.add("hidden"); return; }
+        b.classList.remove("hidden");
+        const s = this.steps[this.currentStep - 1];
+        document.getElementById("demoStepNumber").textContent = `Step ${this.currentStep} of ${this.totalSteps}`;
+        document.getElementById("demoStepTitle").textContent = s.title;
+        document.getElementById("demoStepDescription").textContent = s.description;
+        document.getElementById("demoStepBadge").textContent = s.badge;
+      }
+    }
+    window.demoScenarioRunner = new DemoScenarioRunner();
+
+    // --- 7. MAIN APP COORDINATOR ---
+    class DisasterResponseApp {
+      constructor() {
+        this.requests = []; this.resources = []; this.allocations = []; this.logs = [];
+        this.activeTab = "dashboard"; this.currentFilter = "ALL"; this.searchQuery = "";
+        this.charts = {};
+        this.init();
+      }
+      init() {
+        this.resetToDefaults();
+        this.setupNavigation();
+        this.setupFilters();
+        this.setupForms();
+        this.setupVoiceSms();
+        this.setupSettings();
+        this.setupOffline();
+
+        window.addEventListener("DOMContentLoaded", () => {
+          window.disasterMapController.init();
+          this.initCharts();
+          this.refreshDashboard();
+          this.addLog("SYSTEM ONLINE", "Disaster Command Center operational.");
+        });
+      }
+      resetToDefaults() {
+        this.requests = JSON.parse(JSON.stringify(INITIAL_REQUESTS));
+        this.resources = JSON.parse(JSON.stringify(INITIAL_RESOURCES));
+        this.allocations = [];
+        this.logs = [];
+        this.runPriorityScoring();
+      }
+      runPriorityScoring() {
+        this.requests = window.priorityEngine.rankRequests(this.requests);
+        this.refreshDashboard();
+      }
+      runOptimizationEngine() {
+        this.addLog("OPTIMIZER", "Running resource allocation matching...");
+        this.requests = window.priorityEngine.rankRequests(this.requests);
+        const res = window.resourceOptimizer.runAllocation(this.requests, this.resources);
+        this.requests = res.updatedRequests;
+        this.resources = res.updatedResources;
+        this.allocations = [...this.allocations, ...res.newAllocations];
+        res.logs.forEach(l => this.addLog("ALLOCATION", l));
+        this.showNotification("success", `Optimization complete! ${res.newAllocations.length} routes generated.`);
+        this.refreshDashboard();
+      }
+      quickAllocate(id) {
+        const idx = this.requests.findIndex(r => r.id === id);
+        if (idx === -1) return;
+        const res = window.resourceOptimizer.runAllocation([this.requests[idx]], this.resources);
+        this.requests[idx] = res.updatedRequests[0];
+        this.resources = res.updatedResources;
+        this.allocations = [...this.allocations, ...res.newAllocations];
+        this.showNotification("success", `Request ${id} allocated successfully!`);
+        this.refreshDashboard();
+      }
+      toggleDepotStatus(id) {
+        const depot = this.resources.find(r => r.id === id);
+        if (!depot) return;
+        if (depot.status === "Available") {
+          const res = window.resourceOptimizer.handleResourceDisruption(id, this.requests, this.resources, this.allocations);
+          this.requests = res.updatedRequests;
+          this.resources = res.updatedResources;
+          this.allocations = res.remainingAllocations;
+          this.triggerReallocationAlert(`CRITICAL ALERT: ${depot.name} is flooded/damaged! Reallocating...`);
+          setTimeout(() => this.runOptimizationEngine(), 1000);
+        } else {
+          depot.status = "Available";
+          this.showNotification("success", `${depot.name} restored to service!`);
+          this.refreshDashboard();
+        }
+      }
+      triggerReallocationAlert(msg) {
+        const b = document.getElementById("reallocationBanner");
+        const t = document.getElementById("reallocationBannerText");
+        if (b && t) { t.textContent = msg; b.classList.remove("hidden"); }
+      }
+      dismissReallocationAlert() {
+        document.getElementById("reallocationBanner")?.classList.add("hidden");
+      }
+      setupNavigation() {
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+          btn.addEventListener("click", () => this.switchTab(btn.getAttribute("data-tab")));
+        });
+      }
+      switchTab(name) {
+        this.activeTab = name;
+        document.querySelectorAll(".tab-btn").forEach(b => {
+          if (b.getAttribute("data-tab") === name) b.classList.add("active");
+          else b.classList.remove("active");
+        });
+        document.querySelectorAll(".tab-pane").forEach(p => {
+          if (p.id === `tab-${name}`) p.classList.remove("hidden");
+          else p.classList.add("hidden");
+        });
+        if (name === "dashboard") setTimeout(() => window.disasterMapController.map?.invalidateSize(), 200);
+        if (name === "volunteer") this.refreshVolunteerQueue();
+      }
+      setupFilters() {
+        document.getElementById("tableSearchInput")?.addEventListener("input", (e) => {
+          this.searchQuery = e.target.value.toLowerCase();
+          this.renderRequestsTable();
+        });
+        document.querySelectorAll(".filter-pill").forEach(p => {
+          p.addEventListener("click", () => {
+            document.querySelectorAll(".filter-pill").forEach(x => x.classList.remove("bg-indigo-600", "text-white"));
+            p.classList.add("bg-indigo-600", "text-white");
+            this.currentFilter = p.getAttribute("data-filter");
+            this.renderRequestsTable();
+          });
+        });
+      }
+      setupForms() {
+        const cForm = document.getElementById("citizenRequestForm");
+        cForm?.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const r = {
+            id: `REQ-${String(this.requests.length + 1).padStart(3, '0')}`,
+            emergencyType: cForm.emergencyType.value,
+            peopleCount: parseInt(cForm.peopleCount.value) || 1,
+            locationName: cForm.locationName.value,
+            lat: parseFloat(cForm.lat.value) || 12.9950,
+            lng: parseFloat(cForm.lng.value) || 80.2200,
+            severity: cForm.severity.value,
+            urgency: cForm.urgency.value,
+            requiredResource: cForm.requiredResource.value,
+            quantity: parseInt(cForm.quantity.value) || 1,
+            unit: cForm.unit.value || "units",
+            status: "Pending",
+            allocatedQuantity: 0,
+            unmetQuantity: parseInt(cForm.quantity.value) || 1
+          };
+          this.requests.unshift(r);
+          this.runPriorityScoring();
+          this.showNotification("success", `Request ${r.id} submitted & prioritized!`);
+          cForm.reset();
+          this.switchTab("dashboard");
+        });
+
+        const opForm = document.getElementById("operatorIntakeForm");
+        opForm?.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const r = {
+            id: `OP-${Date.now().toString().slice(-4)}`,
+            emergencyType: opForm.emergencyType.value,
+            peopleCount: parseInt(opForm.peopleCount.value) || 1,
+            locationName: opForm.locationName.value,
+            lat: 13.0100, lng: 80.2250,
+            severity: opForm.severity.value,
+            urgency: opForm.urgency.value,
+            requiredResource: opForm.requiredResource.value,
+            quantity: parseInt(opForm.quantity.value) || 1,
+            unit: "units",
+            status: "Pending",
+            allocatedQuantity: 0, unmetQuantity: parseInt(opForm.quantity.value) || 1
+          };
+          this.requests.unshift(r);
+          this.runPriorityScoring();
+          this.showNotification("success", `Operator ticket ${r.id} added!`);
+          opForm.reset();
+          this.switchTab("dashboard");
+        });
+
+        const vForm = document.getElementById("volunteerRequestForm");
+        vForm?.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const r = {
+            id: `VOL-${Math.floor(Math.random() * 899) + 100}`,
+            emergencyType: vForm.emergencyType.value,
+            peopleCount: parseInt(vForm.peopleCount.value) || 1,
+            locationName: vForm.locationName.value,
+            lat: 12.9750, lng: 80.2100,
+            severity: vForm.severity.value,
+            urgency: "Within 2 Hours",
+            requiredResource: vForm.requiredResource.value,
+            quantity: parseInt(vForm.quantity.value) || 1,
+            unit: "units",
+            allocatedQuantity: 0, unmetQuantity: parseInt(vForm.quantity.value) || 1
+          };
+          if (!window.offlineStorage.isOnline()) {
+            window.offlineStorage.enqueueOfflineRequest(r);
+            this.refreshVolunteerQueue();
+            this.showNotification("warning", `Offline: ${r.id} saved in local phone queue.`);
+            vForm.reset();
+          } else {
+            r.status = "Pending";
+            this.requests.unshift(r);
+            this.runPriorityScoring();
+            this.showNotification("success", `Volunteer request ${r.id} dispatched!`);
+            vForm.reset();
+          }
+        });
+      }
+      setupVoiceSms() {
+        const samples = [
+          { text: "Flooding near Saidapet bridge! 6 cardiac patients stranded on roof. Need medicine & boat urgently!", parsed: { emergencyType: "Flood / Medical", peopleCount: 8, locationName: "Saidapet Bridge Sector", severity: "Critical", requiredResource: "Medicine", quantity: 45, unit: "units", confidence: "98.4%" } },
+          { text: "Velachery camp out of food and drinking water for 50 people.", parsed: { emergencyType: "Food Depletion", peopleCount: 50, locationName: "Velachery Camp", severity: "High", requiredResource: "Food Packets", quantity: 100, unit: "packets", confidence: "95.1%" } },
+          { text: "Huts submerged in Tambaram. 25 people need dry tarps & shelter kits.", parsed: { emergencyType: "Shelter Submerged", peopleCount: 25, locationName: "Tambaram West", severity: "Medium", requiredResource: "Shelter Kits", quantity: 15, unit: "kits", confidence: "96.7%" } }
+        ];
+        document.querySelectorAll(".voice-sample-btn").forEach((btn, idx) => {
+          btn.addEventListener("click", () => {
+            const raw = document.getElementById("rawVoiceInput");
+            if (raw && samples[idx]) {
+              raw.value = samples[idx].text;
+              this.showParsedVoice(samples[idx].parsed);
+            }
+          });
+        });
+        document.getElementById("parseVoiceBtn")?.addEventListener("click", () => {
+          this.showParsedVoice(samples[0].parsed);
+        });
+        document.getElementById("submitParsedVoiceBtn")?.addEventListener("click", () => {
+          if (!this._parsedVoice) return;
+          const r = {
+            id: `VOICE-${Date.now().toString().slice(-4)}`,
+            ...this._parsedVoice,
+            lat: 13.0215, lng: 80.2230, urgency: "Immediate",
+            status: "Pending", allocatedQuantity: 0, unmetQuantity: this._parsedVoice.quantity
+          };
+          this.requests.unshift(r);
+          this.runPriorityScoring();
+          this.showNotification("success", `AI Structured Voice ${r.id} added!`);
+          this.switchTab("dashboard");
+        });
+      }
+      showParsedVoice(data) {
+        this._parsedVoice = data;
+        const box = document.getElementById("parsedVoiceOutput");
+        if (!box) return;
+        box.classList.remove("hidden");
+        document.getElementById("parsedEmergType").textContent = data.emergencyType;
+        document.getElementById("parsedPeople").textContent = `${data.peopleCount} persons`;
+        document.getElementById("parsedSeverity").textContent = data.severity;
+        document.getElementById("parsedResource").textContent = `${data.quantity} ${data.unit} ${data.requiredResource}`;
+        document.getElementById("parsedLocation").textContent = data.locationName;
+        document.getElementById("parsedConfidence").textContent = data.confidence;
+      }
+      setupOffline() {
+        const toggleBtn = document.getElementById("networkToggleBtn");
+        const ind = document.getElementById("networkStatusIndicator");
+        const lbl = document.getElementById("networkStatusText");
+
+        const updateUI = (online) => {
+          if (online) {
+            ind.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm";
+            lbl.textContent = "ONLINE (Cloud Active)";
+            lbl.className = "text-xs font-semibold text-emerald-400";
+            if (toggleBtn) toggleBtn.innerHTML = `<i class="fa-solid fa-wifi mr-1"></i> Simulate Offline`;
+          } else {
+            ind.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm";
+            lbl.textContent = "OFFLINE (Local Queue Mode)";
+            lbl.className = "text-xs font-semibold text-rose-400";
+            if (toggleBtn) toggleBtn.innerHTML = `<i class="fa-solid fa-signal mr-1"></i> Simulate Online`;
+          }
+        };
+
+        toggleBtn?.addEventListener("click", () => {
+          const online = window.offlineStorage.toggleSimulatedOffline();
+          updateUI(online);
+          if (online) {
+            this.showNotification("success", "Back online! Auto-syncing...");
+            this.syncOfflineQueue();
+          } else {
+            this.showNotification("warning", "Network Offline. Local storage mode active.");
+          }
+        });
+
+        window.offlineStorage.onNetworkChange(updateUI);
+        document.getElementById("syncOfflineBtn")?.addEventListener("click", () => this.syncOfflineQueue());
+      }
+      async syncOfflineQueue() {
+        const count = window.offlineStorage.getPendingCount();
+        if (count === 0) { this.showNotification("info", "No pending offline items."); return; }
+        const res = await window.offlineStorage.syncPendingRequests();
+        res.syncedItems.forEach(item => this.requests.unshift(item));
+        this.refreshVolunteerQueue();
+        this.runPriorityScoring();
+        this.showNotification("success", `Synced ${res.count} requests to central triage!`);
+        this.refreshDashboard();
+      }
+      refreshVolunteerQueue() {
+        const q = window.offlineStorage.getQueue();
+        const badge = document.getElementById("offlinePendingBadge");
+        if (badge) badge.textContent = q.length;
+        const el = document.getElementById("offlineRequestsList");
+        if (!el) return;
+        if (q.length === 0) { el.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">All records synced!</div>`; return; }
+        el.innerHTML = q.map(i => `
+          <div class="p-2.5 bg-slate-800 rounded-lg border border-amber-500/30 flex justify-between text-xs">
+            <div>
+              <div class="font-bold text-white">${i.id} <span class="text-amber-400 font-normal">(${i.status})</span></div>
+              <div class="text-slate-300">${i.emergencyType} • ${i.quantity} ${i.unit} ${i.requiredResource}</div>
+              <div class="text-slate-400 text-[10px]">${i.locationName}</div>
+            </div>
+          </div>
+        `).join("");
+      }
+      setupSettings() {
+        const m = document.getElementById("aiSettingsModal");
+        document.getElementById("openSettingsBtn")?.addEventListener("click", () => m?.classList.remove("hidden"));
+        document.getElementById("closeSettingsBtn")?.addEventListener("click", () => m?.classList.add("hidden"));
+        document.getElementById("applyWeightsBtn")?.addEventListener("click", () => {
+          window.priorityEngine.setWeights({
+            severity: parseFloat(document.getElementById("weightSeverity").value),
+            urgency: parseFloat(document.getElementById("weightUrgency").value),
+            peopleCount: parseFloat(document.getElementById("weightPeople").value),
+            waitingTime: parseFloat(document.getElementById("weightWaiting").value)
+          });
+          this.runPriorityScoring();
+          this.showNotification("success", "AI Weights updated & queue re-ranked!");
+          m?.classList.add("hidden");
+        });
+      }
+      showNotification(type, msg) {
+        const c = document.getElementById("notificationContainer");
+        if (!c) return;
+        const toast = document.createElement("div");
+        toast.className = `p-3 rounded-lg shadow-xl border flex items-start space-x-2 toast-enter max-w-sm text-xs bg-slate-900 ${type === 'success' ? 'border-emerald-500 text-emerald-100' : type === 'warning' ? 'border-amber-500 text-amber-100' : 'border-indigo-500 text-white'}`;
+        toast.innerHTML = `<i class="fa-solid fa-circle-info mt-0.5 text-indigo-400"></i><div>${msg}</div>`;
+        c.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }
+      addLog(cat, msg) {
+        this.logs.unshift({ time: new Date().toLocaleTimeString(), cat, msg });
+        const el = document.getElementById("systemAuditLogs");
+        if (el) {
+          el.innerHTML = this.logs.slice(0, 10).map(l => `
+            <div class="text-xs border-b border-slate-800/80 py-1 flex space-x-2 text-slate-300">
+              <span class="text-slate-500 font-mono text-[10px]">${l.time}</span>
+              <span class="font-bold text-indigo-400 text-[10px]">[${l.cat}]</span>
+              <span class="truncate">${l.msg}</span>
+            </div>
+          `).join("");
+        }
+      }
+      refreshDashboard() {
+        const crit = this.requests.filter(r => r.severity === "Critical").length;
+        const high = this.requests.filter(r => r.severity === "High").length;
+        const medLow = this.requests.filter(r => r.severity === "Medium" || r.severity === "Low").length;
+        const ppl = this.requests.reduce((s, r) => s + (r.peopleCount || 0), 0);
+        const allocCount = this.requests.filter(r => r.status === "Assigned" || r.status === "Delivered").length;
+        const rate = this.requests.length > 0 ? Math.round((allocCount / this.requests.length) * 100) : 0;
+
+        document.getElementById("kpiCriticalCount").textContent = crit;
+        document.getElementById("kpiHighCount").textContent = high;
+        document.getElementById("kpiMedLowCount").textContent = medLow;
+        document.getElementById("kpiPeopleCount").textContent = `${ppl} Persons`;
+        document.getElementById("kpiActiveAllocations").textContent = this.allocations.length;
+        document.getElementById("kpiFulfillmentRate").textContent = `${rate}%`;
+
+        this.renderRequestsTable();
+        this.renderResourceCards();
+        this.renderAllocationsTable();
+        this.updateCharts();
+        if (window.disasterMapController.isMapReady) {
+          window.disasterMapController.updateMarkers(this.requests, this.resources, this.allocations);
+        }
+      }
+      renderRequestsTable() {
+        const tbody = document.getElementById("requestsTableBody");
+        if (!tbody) return;
+        let list = [...this.requests];
+        if (this.currentFilter !== "ALL") {
+          list = list.filter(r => this.currentFilter === "CRITICAL" ? r.severity === "Critical" : this.currentFilter === "PENDING" ? (r.status === "Pending" || r.status === "Synced") : (r.status === "Assigned" || r.status === "Partially Allocated"));
+        }
+        if (this.searchQuery) {
+          list = list.filter(r => r.id.toLowerCase().includes(this.searchQuery) || r.locationName.toLowerCase().includes(this.searchQuery));
+        }
+        tbody.innerHTML = list.map(r => `
+          <tr class="border-b border-slate-800 hover:bg-slate-800/40 text-xs">
+            <td class="py-2 px-3 font-mono font-bold text-white flex items-center space-x-1">
+              <button onclick="window.disasterMapController.flyToRequest('${r.id}')" class="text-indigo-400"><i class="fa-solid fa-location-crosshairs mr-1"></i></button>
+              <span>${r.id}</span>
+            </td>
+            <td class="py-2 px-3"><div class="font-semibold text-slate-200">${r.emergencyType}</div><div class="text-[10px] text-slate-400">${r.locationName}</div></td>
+            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.severity === 'Critical' ? 'badge-critical' : r.severity === 'High' ? 'badge-high' : 'badge-low'}">${r.severity}</span></td>
+            <td class="py-2 px-3 font-semibold">${r.peopleCount}</td>
+            <td class="py-2 px-3">${r.quantity} ${r.unit} ${r.requiredResource}</td>
+            <td class="py-2 px-3 font-mono font-bold text-indigo-300">${r.priorityScore || '—'}</td>
+            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-200 border border-slate-700">${r.status}</span></td>
+            <td class="py-2 px-3 text-right">
+              ${r.status === 'Pending' || r.status === 'Synced' ? `<button onclick="window.app.quickAllocate('${r.id}')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[11px] font-medium">Match</button>` : `<span class="text-slate-400 text-[11px]">${r.assignedDepot || 'Dispatched'}</span>`}
+            </td>
+          </tr>
+        `).join("");
+      }
+      renderResourceCards() {
+        const c = document.getElementById("resourceCardsContainer");
+        if (!c) return;
+        c.innerHTML = this.resources.map(res => {
+          const isAvail = res.status === "Available";
+          const pct = Math.round((res.availableQuantity / res.totalCapacity) * 100);
+          return `
+            <div class="glass-card p-3 rounded-xl border border-slate-700/60">
+              <div class="flex justify-between items-center mb-2">
+                <span class="font-bold text-xs text-white">${res.name}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isAvail ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${res.status}</span>
+              </div>
+              <div class="text-xs text-slate-300 space-y-1">
+                <div>Item: <strong>${res.resourceType}</strong></div>
+                <div>Stock: <strong>${res.availableQuantity} / ${res.totalCapacity} ${res.unit}</strong> (${pct}%)</div>
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden mt-1">
+                  <div class="${pct < 20 ? 'bg-rose-500' : 'bg-emerald-500'} h-1.5" style="width:${pct}%"></div>
+                </div>
+              </div>
+              <div class="mt-3 pt-2 border-t border-slate-800 flex justify-between">
+                <button onclick="window.app.toggleDepotStatus('${res.id}')" class="text-[11px] px-2 py-0.5 rounded font-bold ${isAvail ? 'bg-rose-950 text-rose-400 border border-rose-700' : 'bg-emerald-950 text-emerald-400 border border-emerald-700'}">
+                  ${isAvail ? 'Simulate Outage' : 'Restore'}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+      renderAllocationsTable() {
+        const tb = document.getElementById("allocationsTableBody");
+        if (!tb) return;
+        if (this.allocations.length === 0) { tb.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-slate-500 text-xs">No active routes.</td></tr>`; return; }
+        tb.innerHTML = this.allocations.map(a => `
+          <tr class="border-b border-slate-800 hover:bg-slate-800/40 text-xs">
+            <td class="py-2 px-3 font-mono font-bold text-indigo-400">${a.allocationId}</td>
+            <td class="py-2 px-3 font-mono text-white">${a.requestId}</td>
+            <td class="py-2 px-3">${a.depotName}</td>
+            <td class="py-2 px-3 text-emerald-400 font-semibold">${a.allocatedQuantity} ${a.unit} ${a.resourceType}</td>
+            <td class="py-2 px-3">${a.distanceKm} km (ETA: ${a.etaMinutes}m)</td>
+            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-blue-900/40 text-blue-300">${a.status}</span></td>
+            <td class="py-2 px-3 text-right">
+              ${a.status !== 'Delivered' ? `<button onclick="window.app.markDelivered('${a.allocationId}')" class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold">Delivered</button>` : `<span class="text-emerald-400 text-xs">✓ Done</span>`}
+            </td>
+          </tr>
+        `).join("");
+      }
+      markDelivered(id) {
+        const a = this.allocations.find(x => x.allocationId === id);
+        if (a) {
+          a.status = "Delivered";
+          const r = this.requests.find(x => x.id === a.requestId);
+          if (r) r.status = "Delivered";
+          this.refreshDashboard();
+        }
+      }
+      initCharts() {
+        const ctxS = document.getElementById("severityChart")?.getContext("2d");
+        if (ctxS) {
+          this.charts.severity = new Chart(ctxS, {
+            type: 'doughnut',
+            data: { labels: ['Critical', 'High', 'Medium', 'Low'], datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } } }
+          });
+        }
+        const ctxR = document.getElementById("resourcesChart")?.getContext("2d");
+        if (ctxR) {
+          this.charts.resources = new Chart(ctxR, {
+            type: 'bar',
+            data: { labels: ['Medicine', 'Food', 'Water', 'Boats', 'Shelters', 'Volunteers'], datasets: [{ label: 'Stock', data: [0,0,0,0,0,0], backgroundColor: '#10b981', borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } } }, plugins: { legend: { display: false } } }
+          });
+        }
+      }
+      updateCharts() {
+        if (this.charts.severity) {
+          this.charts.severity.data.datasets[0].data = [
+            this.requests.filter(r => r.severity === "Critical").length,
+            this.requests.filter(r => r.severity === "High").length,
+            this.requests.filter(r => r.severity === "Medium").length,
+            this.requests.filter(r => r.severity === "Low").length
+          ];
+          this.charts.severity.update();
+        }
+        if (this.charts.resources) {
+          const types = ['Medicine', 'Food Packets', 'Drinking Water', 'Rescue Boat', 'Shelter Kits', 'Volunteer Team'];
+          this.charts.resources.data.datasets[0].data = types.map(t => this.resources.filter(r => r.resourceType === t && r.status === "Available").reduce((s, r) => s + r.availableQuantity, 0));
+          this.charts.resources.update();
+        }
+      }
+    }
+    window.app = new DisasterResponseApp();
+  </script>
+</body>
+</html>

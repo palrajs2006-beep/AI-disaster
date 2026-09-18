@@ -1,0 +1,188 @@
+/* 
+ * AI Disaster Response Resource Optimizer - Custom Stylesheet
+ * High-Contrast Disaster Command Center Theme
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-critical: #ef4444;
+  --color-high: #f97316;
+  --color-medium: #eab308;
+  --color-low: #3b82f6;
+  --color-success: #10b981;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #0b0f17;
+  color: #e2e8f0;
+  overflow-x: hidden;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Radar & Pulse Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4), inset 0 0 10px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.7), inset 0 0 15px rgba(239, 68, 68, 0.4);
+  }
+}
+
+.radar-pulse-critical {
+  animation: pulseGlow 2s infinite ease-in-out;
+  border: 1px solid #ef4444;
+}
+
+@keyframes sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.radar-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.radar-sweep::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(from 0deg, transparent 70%, rgba(59, 130, 246, 0.2) 100%);
+  transform-origin: top left;
+  animation: sweep 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Leaflet Map overrides */
+.leaflet-container {
+  background: #0d131f !important;
+  font-family: var(--font-sans);
+}
+
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+  padding: 4px !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+.route-tooltip {
+  background-color: rgba(15, 23, 42, 0.92) !important;
+  border: 1px solid #38bdf8 !important;
+  color: #f8fafc !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Glassmorphism Card Style */
+.glass-card {
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.2s ease-in-out;
+}
+.glass-card-hover:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Navigation active tab indicator */
+.tab-btn.active {
+  background-color: #1e293b;
+  color: #38bdf8;
+  border-bottom: 2px solid #38bdf8;
+}
+
+/* Badge Glows */
+.badge-critical {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.badge-high {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.badge-medium {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.badge-low {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.badge-synced {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+/* Notification Toast Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Mobile Volunteer Frame Simulation */
+.mobile-volunteer-frame {
+  max-width: 440px;
+  margin: 0 auto;
+  border: 4px solid #334155;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
