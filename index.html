@@ -2,7 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scale=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Disaster Response Resource Optimizer | Emergency Command Center</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            disaster: {
+              950: '#070a10',
+              900: '#0b0f17',
+              800: '#131b2a',
+              700: '#1c273c',
+              600: '#2b3b59',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet GIS Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#0b0f17] text-slate-100 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Disaster Response Resource Optimizer | Emergency Command Center</title>
   
   <!-- Tailwind CSS CDN -->
@@ -42,81 +85,305 @@
 <body class="bg-[#0b0f17] text-slate-100 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
 
   <!-- TOP APP HEADER -->
-  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md px-3 py-2.5">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md px-4 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
       
       <!-- Brand & Disaster Status -->
-      <div class="flex items-start space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg text-white text-lg mt-0.5">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-900/30 text-white text-lg">
           <i class="fa-solid fa-shield-halved"></i>
         </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <h1 class="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center flex-wrap">
-              AI Disaster Response 
-              <span class="text-indigo-400 ml-1 font-normal text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/30">Optimizer</span>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-extrabold text-base tracking-tight text-white flex items-center">
+              AI Disaster Response <span class="text-indigo-400 ml-1.5 font-normal text-xs uppercase tracking-widest px-2 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/30">Optimizer</span>
             </h1>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-500/40 animate-pulse">
-              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1"></span> Flood Level 3 Active
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-500/40 animate-pulse">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span> Flood Level 3 Active
             </span>
           </div>
-          <p class="text-[11px] text-slate-400 truncate mt-0.5">
-            <span class="text-slate-300 font-medium">Concept:</span> Right Resource → Right Person → Right Place → Right Time
+          <p class="text-xs text-slate-400 flex items-center">
+            <span class="text-slate-300 font-medium">Concept:</span>&nbsp;Right Resource → Right Person → Right Place → Right Time
           </p>
         </div>
       </div>
 
-      <!-- Quick Action Controls -->
-      <div class="flex items-center flex-wrap gap-2 w-full md:w-auto justify-start md:justify-end">
+      <!-- Quick Action Controls & Network Status -->
+      <div class="flex items-center flex-wrap gap-2">
         
         <!-- Offline / Online Simulator -->
-        <div class="flex items-center justify-between space-x-2 bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700/60 flex-1 sm:flex-none">
-          <div class="flex items-center space-x-1.5 min-w-0">
-            <span id="networkStatusIndicator" class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
-            <span id="networkStatusText" class="text-[11px] font-semibold text-emerald-400 truncate">ONLINE</span>
-          </div>
-          <button id="networkToggleBtn" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded font-medium border border-slate-600 flex-shrink-0">
-            <i class="fa-solid fa-wifi mr-1"></i> Offline
+        <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
+          <span id="networkStatusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span>
+          <span id="networkStatusText" class="text-xs font-semibold text-emerald-400">ONLINE (Cloud Active)</span>
+          <button id="networkToggleBtn" class="ml-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded font-medium border border-slate-600 transition">
+            <i class="fa-solid fa-wifi mr-1"></i> Simulate Offline
           </button>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center space-x-2 w-full sm:w-auto">
-          <button id="openSettingsBtn" class="flex-1 sm:flex-none text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-700/70 font-medium flex items-center justify-center">
-            <i class="fa-solid fa-sliders text-indigo-400 mr-1.5"></i> Weights
-          </button>
+        <!-- AI Weights Configuration Modal Trigger -->
+        <button id="openSettingsBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700/70 font-medium flex items-center transition">
+          <i class="fa-solid fa-sliders text-indigo-400 mr-1.5"></i> AI Weights
+        </button>
 
-          <button onclick="window.demoScenarioRunner.goToStep(1)" class="flex-1 sm:flex-none text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white px-3 py-1.5 rounded-lg font-bold flex items-center justify-center truncate">
-            <i class="fa-solid fa-play-circle mr-1.5"></i> 10-Step Demo
-          </button>
-        </div>
-
+        <!-- Flood Disaster 10-Step Demo Button (Section 15) -->
+        <button onclick="window.demoScenarioRunner.goToStep(1)" class="text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white px-3.5 py-1.5 rounded-lg font-bold shadow-lg shadow-orange-900/30 flex items-center transition">
+          <i class="fa-solid fa-play-circle text-sm mr-1.5"></i> 10-Step Demo Walkthrough
+        </button>
       </div>
     </div>
 
     <!-- MAIN NAVIGATION TABS -->
-    <div class="max-w-7xl mx-auto mt-2 pt-2 border-t border-slate-800/80 flex items-center space-x-1 overflow-x-auto text-xs whitespace-nowrap px-1">
-      <button data-tab="dashboard" class="tab-btn active flex-shrink-0 px-3 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5">
-        <i class="fa-solid fa-chart-line"></i> <span>Command Center</span>
+    <div class="max-w-7xl mx-auto mt-2 pt-2 border-t border-slate-800/80 flex items-center space-x-1 overflow-x-auto text-xs">
+      <button data-tab="dashboard" class="tab-btn active px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-chart-line text-sm"></i> <span>Command Center</span>
       </button>
-      <button data-tab="citizen" class="tab-btn flex-shrink-0 px-3 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 text-slate-400">
-        <i class="fa-solid fa-bullhorn"></i> <span>Public Request</span>
+      <button data-tab="citizen" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-bullhorn text-sm"></i> <span>Public Request Form</span>
       </button>
-      <button data-tab="operator" class="tab-btn flex-shrink-0 px-3 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 text-slate-400">
-        <i class="fa-solid fa-headset"></i> <span>Operator Voice/SMS</span>
+      <button data-tab="operator" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-headset text-sm"></i> <span>Operator & Voice/SMS AI</span>
       </button>
-      <button data-tab="volunteer" class="tab-btn flex-shrink-0 px-3 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 text-slate-400">
-        <i class="fa-solid fa-hand-holding-hand"></i> <span>Volunteer (Offline)</span>
+      <button data-tab="volunteer" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-hand-holding-hand text-sm"></i> <span>Village Volunteer (Offline Mode)</span>
       </button>
-      <button data-tab="resources" class="tab-btn flex-shrink-0 px-3 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 text-slate-400">
-        <i class="fa-solid fa-boxes-stacked"></i> <span>Resource Depots</span>
+      <button data-tab="resources" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-boxes-stacked text-sm"></i> <span>Resource Depots</span>
       </button>
-      <button data-tab="allocations" class="tab-btn flex-shrink-0 px-3 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 text-slate-400">
-        <i class="fa-solid fa-truck-fast"></i> <span>Dispatches</span>
+      <button data-tab="allocations" class="tab-btn px-3.5 py-1.5 rounded-t-lg font-semibold flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-truck-fast text-sm"></i> <span>Dispatches & Routes</span>
       </button>
     </div>
   </header>
+
   <!-- SECTION 15 DEMO SCENARIO INTERACTIVE STEP BANNER -->
+  <div id="demoScenarioBanner" class="hidden bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 border-b border-amber-500/40 px-4 py-3 sticky top-[95px] z-30 shadow-2xl backdrop-blur-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <span id="demoStepBadge" class="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-extrabold text-xs tracking-wider uppercase shadow"></span>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span id="demoStepNumber" class="text-xs font-mono font-bold text-amber-400">Step 1 of 10</span>
+            <h3 id="demoStepTitle" class="text-sm font-bold text-white"></h3>
+          </div>
+          <p id="demoStepDescription" class="text-xs text-slate-300 mt-0.5"></p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="demoPrevBtn" onclick="window.demoScenarioRunner.prevStep()" class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold border border-slate-700">
+          <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+        </button>
+        <button id="demoNextBtn" onclick="window.demoScenarioRunner.nextStep()" class="text-xs px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-lg shadow-amber-500/30">
+          Next Step <i class="fa-solid fa-chevron-right ml-1"></i>
+        </button>
+        <button onclick="window.demoScenarioRunner.resetDemo()" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-rose-900 text-slate-400 hover:text-rose-200 font-medium">
+          <i class="fa-solid fa-rotate-left"></i> Exit Demo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- URGENT REALLOCATION BANNER (Section 10 & 15) -->
+  <div id="reallocationBanner" class="hidden bg-rose-950/90 border-b-2 border-rose-500 px-4 py-2.5 sticky top-[95px] z-30 flex items-center justify-between text-xs text-rose-100 shadow-xl">
+    <div class="flex items-center space-x-2">
+      <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+      <i class="fa-solid fa-triangle-exclamation text-rose-400 text-sm"></i>
+      <span class="font-bold text-white uppercase tracking-wider">Dynamic Reallocation Alert:</span>
+      <span id="reallocationBannerText" class="font-medium"></span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button onclick="window.app.runOptimizationEngine()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold uppercase text-[10px]">
+        Execute Reallocation Plan
+      </button>
+      <button onclick="window.app.dismissReallocationAlert()" class="text-slate-400 hover:text-white px-2">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN BODY CONTENT -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 space-y-4">
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: COMMAND CENTER & DASHBOARD -->
+    <!-- ========================================================================= -->
+    <div id="tab-dashboard" class="tab-pane space-y-4">
+      
+      <!-- Top Row KPI Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Critical Requests -->
+        <div class="glass-card p-3 rounded-xl border border-rose-500/30 bg-rose-950/20">
+          <div class="flex items-center justify-between text-xs text-rose-400 font-semibold mb-1">
+            <span>Critical Cases</span>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div id="kpiCriticalCount" class="text-2xl font-black text-rose-500">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Immediate triage</div>
+        </div>
+
+        <!-- High Priority -->
+        <div class="glass-card p-3 rounded-xl border border-amber-500/30 bg-amber-950/20">
+          <div class="flex items-center justify-between text-xs text-amber-400 font-semibold mb-1">
+            <span>High Urgency</span>
+            <i class="fa-solid fa-circle-exclamation"></i>
+          </div>
+          <div id="kpiHighCount" class="text-2xl font-black text-amber-500">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Within 2 hrs</div>
+        </div>
+
+        <!-- Medium / Low -->
+        <div class="glass-card p-3 rounded-xl border border-blue-500/30 bg-blue-950/20">
+          <div class="flex items-center justify-between text-xs text-blue-400 font-semibold mb-1">
+            <span>Med / Routine</span>
+            <i class="fa-solid fa-info-circle"></i>
+          </div>
+          <div id="kpiMedLowCount" class="text-2xl font-black text-blue-400">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Non-critical queue</div>
+        </div>
+
+        <!-- Affected People -->
+        <div class="glass-card p-3 rounded-xl border border-slate-700/60">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+            <span>Affected Pop.</span>
+            <i class="fa-solid fa-people-group text-indigo-400"></i>
+          </div>
+          <div id="kpiPeopleCount" class="text-lg font-black text-white truncate">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Reported headcount</div>
+        </div>
+
+        <!-- Active Allocations -->
+        <div class="glass-card p-3 rounded-xl border border-slate-700/60">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+            <span>Active Routes</span>
+            <i class="fa-solid fa-route text-cyan-400"></i>
+          </div>
+          <div id="kpiActiveAllocations" class="text-2xl font-black text-cyan-400">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Dispatches in transit</div>
+        </div>
+
+        <!-- Fulfillment Ratio -->
+        <div class="glass-card p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20">
+          <div class="flex items-center justify-between text-xs text-emerald-400 font-semibold mb-1">
+            <span>Fulfillment</span>
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div id="kpiFulfillmentRate" class="text-2xl font-black text-emerald-400">0%</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Demand resolved</div>
+        </div>
+      </div>
+
+      <!-- Main GIS Map & Live Optimization Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+        <!-- Interactive Disaster Map (2 cols on lg) -->
+        <div class="lg:col-span-2 glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[520px]">
+          <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-map-location-dot text-indigo-400 mr-1.5"></i> Live Disaster GIS Command Map
+              </h2>
+              <span class="text-[11px] text-slate-400">(Velachery - Saidapet - Tambaram Basin)</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs">
+              <button onclick="window.disasterMapController.fitAll()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] border border-slate-700">
+                <i class="fa-solid fa-expand mr-1"></i> Reset View
+              </button>
+            </div>
+          </div>
+          <!-- Leaflet Map Container -->
+          <div id="disasterMap" class="flex-1 w-full relative"></div>
+          
+          <!-- Map Legend Footer -->
+          <div class="p-2 bg-slate-900/90 border-t border-slate-800 text-[11px] flex flex-wrap items-center justify-between gap-2 text-slate-400">
+            <div class="flex items-center space-x-4">
+              <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-rose-600 mr-1"></span> Critical Need</span>
+              <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1"></span> High Need</span>
+              <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1"></span> Medium/Low</span>
+              <span class="flex items-center"><span class="w-3 h-3 rounded bg-emerald-600 mr-1 flex items-center justify-center text-[8px] text-white">🏭</span> Resource Depot</span>
+              <span class="flex items-center"><span class="w-4 h-0.5 bg-blue-400 border-dashed mr-1"></span> Active Dispatch Route</span>
+            </div>
+            <span class="text-indigo-400 font-mono text-[10px]">Haversine Proximity Optimization Active</span>
+          </div>
+        </div>
+
+        <!-- AI Engine Controls & Real-Time Analytics (1 col on lg) -->
+        <div class="space-y-4 flex flex-col justify-between">
+          
+          <!-- Optimization Action Box -->
+          <div class="glass-card p-4 rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-indigo-950/40 to-slate-900">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-brain text-indigo-400 mr-1.5"></i> AI Decision Engine
+              </h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
+                Rule & Optimization Mode
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              Executes multi-objective matching: matches highest AI priority requests to nearest available depots while respecting capacity & partial fulfillment rules.
+            </p>
+
+            <div class="space-y-2">
+              <button onclick="window.app.runOptimizationEngine()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition transform active:scale-98">
+                <i class="fa-solid fa-bolt text-sm"></i>
+                <span>Run Resource Optimizer</span>
+              </button>
+
+              <button onclick="window.app.runPriorityScoring()" class="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center space-x-2 border border-slate-700 transition">
+                <i class="fa-solid fa-calculator text-slate-400 text-xs"></i>
+                <span>Recalculate Priority Scores</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Real-Time Analytics Doughnut & Resource Bars -->
+          <div class="glass-card p-3 rounded-2xl border border-slate-800 space-y-3 flex-1 flex flex-col justify-between">
+            <div>
+              <h4 class="text-xs font-bold text-slate-300 mb-1 flex items-center">
+                <i class="fa-solid fa-chart-pie text-rose-400 mr-1.5"></i> Severity Triage Breakdown
+              </h4>
+              <div class="h-28 relative">
+                <canvas id="severityChart"></canvas>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <h4 class="text-xs font-bold text-slate-300 mb-1 flex items-center">
+                <i class="fa-solid fa-chart-simple text-emerald-400 mr-1.5"></i> Resource Depot Stocks
+              </h4>
+              <div class="h-28 relative">
+                <canvas id="resourcesChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Requests Triage Queue & Search Filter Section -->
+      <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+        <div class="p-3 bg-slate-900 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2">
+          
+          <div class="flex items-center space-x-2">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+              <i class="fa-solid fa-list-check text-indigo-400 mr-1.5"></i> Prioritized Emergency Requests Queue
+            </h3>
+            <span class="text-[11px] text-slate-400">(Ranked by AI Score)</span>
+          </div>
+
+          <!-- Filters & Search -->
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <div class="relative flex-1 sm:w-56">
+              <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-400"></i>
+              <input type="text" id="tableSearchInput" placeholder="Search ID, village, item..." class="w-full bg-slate-800/80 border border-slate-700/80 rounded-lg pl-7 pr-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="flex items-center space-x-1 bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+              <button data-filter="ALL" class="filter-pill px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-600 text-white">All</button>
+              <button data-filter="CRITICAL" class="filter-pill px-2 py-0.5 rounded text-[11px] font-semibold text-slate-300 hover:text-white">Critical</button>
+              <button data-filter="PENDING" class="filter-pill px-2 py-0.5 rounded text-[11px] font-semibold text-slate-300 hover:text-white">Pending</button>
+              <!-- SECTION 15 DEMO SCENARIO INTERACTIVE STEP BANNER -->
   <div id="demoScenarioBanner" class="hidden bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 border-b border-amber-500/40 px-4 py-3 sticky top-[95px] z-30 shadow-2xl backdrop-blur-md">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
       <div class="flex items-center space-x-3">
